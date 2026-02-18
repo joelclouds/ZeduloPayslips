@@ -1,0 +1,211 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from pathlib import Path
+from src.config_manager import ConfigManager
+from openpyxl import load_workbook
+
+class SettingsWindow(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.title("Settings")
+        self.geometry("750x400")
+        self.resizable(True, False)
+
+        self.attributes('-topmost', True)
+        self.focus_force()
+
+        self.config_manager = ConfigManager()
+        self.config = self.config_manager.load()
+        self.entries = {}
+
+        self._create_scrollable_area()
+        self._build_ui()
+
+        self.after(200, lambda: self.attributes('-topmost', False))
+        # Clean up mousewheel bindings on close
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _create_scrollable_area(self):
+        self.canvas = tk.Canvas(self, highlightthickness=0)
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.scrollable_frame = tk.Frame(self.canvas)
+
+        # Update scrollregion when frame resizes
+        self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
+        # Update content width when canvas resizes
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        # Bind mousewheel to canvas AND all its children (recursively)
+        self._bind_mousewheel_recursive(self.canvas)
+
+    def _bind_mousewheel_recursive(self, widget):
+        """Recursively bind mousewheel to widget and all children."""
+        widget.bind("<Enter>", lambda e: self._enable_mousewheel(widget), add="+")
+        widget.bind("<Leave>", lambda e: self._disable_mousewheel(widget), add="+")
+        for child in widget.winfo_children():
+            self._bind_mousewheel_recursive(child)
+
+    def _enable_mousewheel(self, widget):
+        """Enable mousewheel for a specific widget."""
+        widget.bind("<MouseWheel>", self._on_mousewheel, add="+")
+        widget.bind("<Button-4>", self._on_mousewheel, add="+")
+        widget.bind("<Button-5>", self._on_mousewheel, add="+")
+
+    def _disable_mousewheel(self, widget):
+        """Disable mousewheel for a specific widget."""
+        widget.unbind("<MouseWheel>")
+        widget.unbind("<Button-4>")
+        widget.unbind("<Button-5>")
+
+    def _on_mousewheel(self, event):
+        """Handle mousewheel scrolling."""
+        if event.num == 5 or event.delta == -120:
+            self.canvas.yview_scroll(3, "units")  # Smoother scroll speed
+        elif event.num == 4 or event.delta == 120:
+            self.canvas.yview_scroll(-3, "units")
+
+    def _on_frame_configure(self, event=None):
+        """Update scrollregion when content changes size."""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_canvas_configure(self, event):
+        """Resize content to match canvas width."""
+        self.canvas.itemconfig(self.canvas_window, width=event.width)
+
+    def _on_close(self):
+        """Clean up bindings and close window."""
+        self.canvas.unbind_all("<MouseWheel>")
+        self.canvas.unbind_all("<Button-4>")
+        self.canvas.unbind_all("<Button-5>")
+        self.destroy()
+
+    def _build_ui(self):
+        pad = 5
+        parent = self.scrollable_frame
+
+        for row, key in enumerate(self.config.keys()):
+            label_text = key.replace("_", " ").title()
+
+            tk.Label(parent, text=label_text).grid(
+                row=row, column=0, sticky="w", padx=pad, pady=(pad, 0)
+            )
+
+            entry = tk.Entry(parent, width=50)
+            entry.grid(row=row, column=1, sticky="ew", padx=pad, pady=(pad, 0))
+            entry.insert(0, self.config[key])
+            self.entries[key] = entry
+
+            if "FILEPATH" in key:
+                btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_file(k))
+                btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
+            elif "FOLDER" in key:
+                btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_dir(k))
+                btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
+
+        parent.columnconfigure(0, weight=0)
+        parent.columnconfigure(1, weight=1)
+        parent.columnconfigure(2, weight=0)
+
+        save_btn = tk.Button(parent, text="Save", width=15, command=self._save)
+        save_btn.grid(row=row + 1, column=1, sticky="e", pady=(20, 10), padx=pad)
+
+        cancel_btn = tk.Button(parent, text="Cancel", width=15, command=self.destroy)
+        cancel_btn.grid(row=row + 1, column=2, sticky="w", pady=(20, 10), padx=pad)
+
+        parent.grid_rowconfigure(row + 1, weight=1)
+
+        # Force scrollregion update after UI is built
+        self.after_idle(self._on_frame_configure)
+
+    def _browse_file(self, key):
+        path = filedialog.askopenfilename(
+            title="Select file",
+            filetypes=[("Excel Files", "*.xlsx *.xls"), ("All Files", "*.*")],
+            parent=self
+        )
+        if path:
+            self.entries[key].delete(0, tk.END)
+            self.entries[key].insert(0, path)
+
+    def _browse_dir(self, key):
+        path = filedialog.askdirectory(title="Select Directory", parent=self)
+        if path:
+            self.entries[key].delete(0, tk.END)
+            self.entries[key].insert(0, path)
+
+    def _save(self):
+        new_config = {}
+        for key, entry in self.entries.items():
+            val = entry.get().strip()
+
+            if "FILEPATH" in key and val and not Path(val).exists():
+                messagebox.showerror("Invalid Path", f"{val} does not exist!", parent=self)
+                return
+            elif "DIR" in key and val and not Path(val).is_dir():
+                messagebox.showerror("Invalid Directory", f"{val} is not a directory!", parent=self)
+                return
+            elif "HEADER" in key.upper():
+                if not val:
+                    continue
+                employee_sheet_path = None
+                if "EMPLOYEE_SPREADSHEET_FILEPATH" in self.entries:
+                    employee_sheet_path = self.entries["EMPLOYEE_SPREADSHEET_FILEPATH"].get()
+                else:
+                    employee_sheet_path = self.config.get("EMPLOYEE_SPREADSHEET_FILEPATH")
+
+                if not employee_sheet_path or not Path(employee_sheet_path).exists():
+                    messagebox.showerror("Invalid Source", "Employee file path is not set or does not exist!", parent=self)
+                    return
+
+                try:
+                    wb = load_workbook(employee_sheet_path)
+                    header_found_in_all_sheets = True
+                    missing_sheets = []
+
+                    for sheet_name in wb.sheetnames:
+                        sheet = wb[sheet_name]
+                        row1_values = [str(cell.value).strip() for cell in sheet[1] if cell.value is not None]
+                        if val not in row1_values:
+                            header_found_in_all_sheets = False
+                            missing_sheets.append(sheet_name)
+
+                    if not header_found_in_all_sheets:
+                        messagebox.showerror(
+                            "Invalid Header",
+                            f"\"{val}\" not found in row 1 of every sheet!\n\nMissing from: {', '.join(missing_sheets)}",
+                            parent=self
+                        )
+                        return
+                    wb.close()
+                except Exception as e:
+                    messagebox.showerror("Error Validating Header", str(e), parent=self)
+                    return
+            elif "CELL" in key:
+                if not val:
+                    continue
+                try:
+                    template_path = self.entries.get("PAYSLIP_TEMPLATE_FILEPATH", tk.StringVar(value=self.config.get("PAYSLIP_TEMPLATE_FILEPATH", ""))).get()
+                    if template_path and Path(template_path).exists():
+                        load_workbook(template_path)[val]
+                    else:
+                        load_workbook(self.config["PAYSLIP_TEMPLATE_FILEPATH"])[val]
+                except:
+                    messagebox.showerror("Invalid Cell reference", f"\"{val}\" is not a valid cell in the template file!", parent=self)
+                    return
+
+            new_config[key] = val
+
+        try:
+            self.config_manager.save(new_config)
+            self.destroy()
+            messagebox.showinfo("Settings Saved", "Configuration updated successfully.", parent=self.master)
+        except Exception as e:
+            messagebox.showerror("Error Saving", str(e), parent=self)

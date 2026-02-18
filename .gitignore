@@ -1,0 +1,36 @@
+aitdd.sh
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Virtual Environment
+venv/
+
+# Backups
+*.bkp
+*.bak
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+/bin/
+/.zedulopayslips/
+*.db
+config.json
+
+# Logs
+*.log
