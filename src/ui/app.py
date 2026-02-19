@@ -15,7 +15,7 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Zedulo Payslips Utility")
-        self.root.geometry("900x700")
+        self.root.geometry("1000x900")
 
         self.config_manager = ConfigManager()
         self.config = self.config_manager.load()
@@ -202,7 +202,7 @@ class App:
         try:
             load_workbook(self.config["EMPLOYEE_SPREADSHEET_FILEPATH"])
         except:
-            messagebox.showerror("Error", "Employee spreadsheet is not valid!", parent=self.root)
+            messagebox.showerror("Error", f"Could not open spreadsheet:\n{str(e)}", parent=self.root)
             return
 
         if not self.config.get("PAYSLIP_TEMPLATE_FILEPATH"):
@@ -211,7 +211,7 @@ class App:
         try:
             load_workbook(self.config["PAYSLIP_TEMPLATE_FILEPATH"])
         except:
-            messagebox.showerror("Error", "Payslip template spreadsheet is not valid!", parent=self.root)
+            messagebox.showerror("Error", f"Could not open spreadsheet:\n{str(e)}", parent=self.root)
             return
 
         # Reset Dict and UI

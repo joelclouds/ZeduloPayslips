@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os, json, subprocess, shutil
 from pathlib import Path
 from config import APP_HOME_DIR, APP_CONFIG_FILEPATH, APP_CONFIG, APP_NAME

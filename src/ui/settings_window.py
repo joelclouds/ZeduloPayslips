@@ -1,14 +1,21 @@
+# src/ui/settings_window.py
+"""
+Settings window for Zedulo Payslips (Tkinter version).
+Mousewheel works over all areas - scrollbar, labels, entries, buttons, empty space.
+"""
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
 from src.config_manager import ConfigManager
 from openpyxl import load_workbook
 
+
 class SettingsWindow(tk.Toplevel):
     def __init__(self, master=None):
         super().__init__(master)
         self.title("Settings")
-        self.geometry("750x400")
+        self.geometry("1000x750")
         self.resizable(True, False)
 
         self.attributes('-topmost', True)
@@ -21,8 +28,10 @@ class SettingsWindow(tk.Toplevel):
         self._create_scrollable_area()
         self._build_ui()
 
+        # ✅ Bind mousewheel globally when window opens
+        self._bind_mousewheel()
+
         self.after(200, lambda: self.attributes('-topmost', False))
-        # Clean up mousewheel bindings on close
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _create_scrollable_area(self):
@@ -43,34 +52,34 @@ class SettingsWindow(tk.Toplevel):
 
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
 
-        # Bind mousewheel to canvas AND all its children (recursively)
-        self._bind_mousewheel_recursive(self.canvas)
+    def _bind_mousewheel(self):
+        """Bind mousewheel globally for this window."""
+        self.bind_all("<MouseWheel>", self._on_mousewheel, add="+")
+        self.bind_all("<Button-4>", self._on_mousewheel, add="+")
+        self.bind_all("<Button-5>", self._on_mousewheel, add="+")
 
-    def _bind_mousewheel_recursive(self, widget):
-        """Recursively bind mousewheel to widget and all children."""
-        widget.bind("<Enter>", lambda e: self._enable_mousewheel(widget), add="+")
-        widget.bind("<Leave>", lambda e: self._disable_mousewheel(widget), add="+")
-        for child in widget.winfo_children():
-            self._bind_mousewheel_recursive(child)
-
-    def _enable_mousewheel(self, widget):
-        """Enable mousewheel for a specific widget."""
-        widget.bind("<MouseWheel>", self._on_mousewheel, add="+")
-        widget.bind("<Button-4>", self._on_mousewheel, add="+")
-        widget.bind("<Button-5>", self._on_mousewheel, add="+")
-
-    def _disable_mousewheel(self, widget):
-        """Disable mousewheel for a specific widget."""
-        widget.unbind("<MouseWheel>")
-        widget.unbind("<Button-4>")
-        widget.unbind("<Button-5>")
+    def _unbind_mousewheel(self):
+        """Unbind mousewheel globally."""
+        self.unbind_all("<MouseWheel>")
+        self.unbind_all("<Button-4>")
+        self.unbind_all("<Button-5>")
 
     def _on_mousewheel(self, event):
-        """Handle mousewheel scrolling."""
-        if event.num == 5 or event.delta == -120:
-            self.canvas.yview_scroll(3, "units")  # Smoother scroll speed
-        elif event.num == 4 or event.delta == 120:
-            self.canvas.yview_scroll(-3, "units")
+        """
+        Handle mousewheel by checking if scrollbar Y value actually changes.
+        Prevents jitter at top/bottom edges.
+        """
+        # 1. Get scrollbar position BEFORE scroll attempt
+        before_first, before_last = self.scrollbar.get()
+
+        # 2. Attempt the scroll
+        if event.num == 5:
+            if before_last == 1.0:
+                return
+
+            self.canvas.yview_scroll(1, "units")  # DOWN
+        elif event.num == 4:
+            self.canvas.yview_scroll(-1, "units")  # UP
 
     def _on_frame_configure(self, event=None):
         """Update scrollregion when content changes size."""
@@ -82,9 +91,7 @@ class SettingsWindow(tk.Toplevel):
 
     def _on_close(self):
         """Clean up bindings and close window."""
-        self.canvas.unbind_all("<MouseWheel>")
-        self.canvas.unbind_all("<Button-4>")
-        self.canvas.unbind_all("<Button-5>")
+        self._unbind_mousewheel()
         self.destroy()
 
     def _build_ui(self):
@@ -94,21 +101,36 @@ class SettingsWindow(tk.Toplevel):
         for row, key in enumerate(self.config.keys()):
             label_text = key.replace("_", " ").title()
 
-            tk.Label(parent, text=label_text).grid(
-                row=row, column=0, sticky="w", padx=pad, pady=(pad, 0)
-            )
+            lbl = tk.Label(parent, text=label_text)
+            lbl.grid(row=row, column=0, sticky="w", padx=pad, pady=(pad, 0))
+            # ✅ Bind mousewheel to label so it passes through
+            lbl.bind("<MouseWheel>", self._on_mousewheel, add="+")
+            lbl.bind("<Button-4>", self._on_mousewheel, add="+")
+            lbl.bind("<Button-5>", self._on_mousewheel, add="+")
 
             entry = tk.Entry(parent, width=50)
             entry.grid(row=row, column=1, sticky="ew", padx=pad, pady=(pad, 0))
             entry.insert(0, self.config[key])
             self.entries[key] = entry
+            # ✅ Bind mousewheel to entry so it passes through
+            entry.bind("<MouseWheel>", self._on_mousewheel, add="+")
+            entry.bind("<Button-4>", self._on_mousewheel, add="+")
+            entry.bind("<Button-5>", self._on_mousewheel, add="+")
 
             if "FILEPATH" in key:
                 btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_file(k))
                 btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
+                # ✅ Bind mousewheel to button so it passes through
+                btn.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                btn.bind("<Button-4>", self._on_mousewheel, add="+")
+                btn.bind("<Button-5>", self._on_mousewheel, add="+")
             elif "FOLDER" in key:
                 btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_dir(k))
                 btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
+                # ✅ Bind mousewheel to button so it passes through
+                btn.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                btn.bind("<Button-4>", self._on_mousewheel, add="+")
+                btn.bind("<Button-5>", self._on_mousewheel, add="+")
 
         parent.columnconfigure(0, weight=0)
         parent.columnconfigure(1, weight=1)
