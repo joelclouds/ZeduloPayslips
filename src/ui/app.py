@@ -215,7 +215,7 @@ class App:
 
         # Reset Dict and UI
         self.generated_payslips.clear()
-        slf.payslip_widgets.clear()
+        self.payslip_widgets.clear()
         for widget in self.payslip_scrollable_frame.winfo_children():
             widget.destroy()
         self.payslip_row = 0
