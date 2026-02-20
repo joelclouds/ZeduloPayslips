@@ -18,9 +18,7 @@ fi
 #Well setup the app in $HOME
 #then create a desktop entry for the app at $HOME/.local/share/applications/
 
-if ! libreoffice --help &>/dev/null; then
-    sudo apt update && sudo apt install -y libreoffice
-fi
+sudo apt update && sudo apt install -y libreoffice
 
 pushd scripts &> /dev/null
 

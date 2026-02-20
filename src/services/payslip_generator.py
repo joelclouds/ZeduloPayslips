@@ -239,10 +239,10 @@ class PayslipGenerator:
                 v['value'] = employee_entry[k]
 
         payslip_xlsx_filepath = self.write_payslip_xlsx(payslip_details)
-        assert payslip_xlsx_filepath, "Failed to create a payslip spreadshhet from the template"
+        assert payslip_xlsx_filepath, f"For {self.month}, {employee_entry['name']}, we  failed to create a payslip spreadshhet from the template"
 
         payslip_pdf_filepath = self.spreadsheet_to_pdf(payslip_xlsx_filepath)
-        assert payslip_pdf_filepath, "Failed to convert payslip spreadsheet to pdf"
+        assert payslip_pdf_filepath, f"For {self.month}, {employee_entry['name']}, failed to convert payslip spreadsheet to pdf"
 
         return {
             "details"      : payslip_details,
@@ -279,7 +279,7 @@ class PayslipGenerator:
 
         pdf_path = spreadsheet_path.with_suffix('.pdf')
 
-        return str(pdf_path)
+        return str(pdf_path) if pdf_path.exists() else None
 
     def generate_payslips(self):
         employee_spreadsheet_rows = list( self.employee_sheet_rows_iter() )
