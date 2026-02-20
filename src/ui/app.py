@@ -200,7 +200,7 @@ class App:
             return
         try:
             load_workbook(self.config["EMPLOYEE_SPREADSHEET_FILEPATH"])
-        except:
+        except Exception as e:
             messagebox.showerror("Error", f"Could not open spreadsheet:\n{str(e)}", parent=self.root)
             return
 
@@ -209,7 +209,7 @@ class App:
             return
         try:
             load_workbook(self.config["PAYSLIP_TEMPLATE_FILEPATH"])
-        except:
+        except Exception as e:
             messagebox.showerror("Error", f"Could not open spreadsheet:\n{str(e)}", parent=self.root)
             return
 
