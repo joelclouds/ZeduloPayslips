@@ -279,7 +279,7 @@ class PayslipGenerator:
 
         pdf_path = spreadsheet_path.with_suffix('.pdf')
 
-        return str(pdf_path) if pdf_path.exists() else None
+        return str(pdf_path)
 
     def generate_payslips(self):
         employee_spreadsheet_rows = list( self.employee_sheet_rows_iter() )
