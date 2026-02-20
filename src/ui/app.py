@@ -4,12 +4,11 @@ import threading
 from pathlib import Path
 from src.config_manager import ConfigManager
 from src.ui.settings_window import SettingsWindow
+from src.services.file_explorer import open_with_default_app
 from src.services.payslip_generator import PayslipGenerator
 from openpyxl import load_workbook
-import webbrowser
-import os
 from datetime import datetime
-from src.services.mailing import send_bulk_payslips
+from src.services.mailing import send_payslip_email, send_bulk_payslips
 
 class App:
     def __init__(self, root):
@@ -228,7 +227,7 @@ class App:
         self.progress_label.config(text=f"Starting generation for {months_display}...")
 
         # Pass INTEGERS to backend
-        thread = threading.Thread(target=self._generate_worker, args=(selected_months,))
+        thread = threading.Thread(target=self._generate_worker, args=(selected_months,), daemon=True)
         thread.start()
 
     def _generate_worker(self, selected_months):
@@ -316,20 +315,14 @@ class App:
 
     def _review_payslip(self, path):
         if Path(path).exists():
-            try:
-                os.startfile(path)
-            except AttributeError:
-                webbrowser.open(f'file://{path}')
+            open_with_default_app(path)
         else:
             messagebox.showerror("Error", f"File not found: {path}", parent=self.root)
 
     def _open_folder(self, path):
         folder = str(Path(path).parent)
         if Path(folder).exists():
-            try:
-                os.startfile(folder)
-            except AttributeError:
-                webbrowser.open(f'file://{folder}')
+            open_with_default_app(folder)
         else:
             messagebox.showerror("Error", f"Folder not found: {folder}", parent=self.root)
 

@@ -15,20 +15,15 @@ if [ $? -ne 0 ]; then
     fi
 fi
 
-#Well setup the app
-#then compile into a binary with  pyinstaller
-#then create a desktop entry for the binary @ /usr/share/applications/
+#Well setup the app in $HOME
+#then create a desktop entry for the app at $HOME/.local/share/applications/
 
 if ! libreoffice --help &>/dev/null; then
     sudo apt update && sudo apt install -y libreoffice
 fi
 
-pushd scripts
+pushd scripts &> /dev/null
 
-python3 -m venv ../venv
-../venv/bin/pip install -r ../requirements.txt
-../venv/bin/python3 ../src/setup.py
+python3 ../src/setup.py
 
-rm *.spec # from xcutable creation
-
-popd
+popd &> /dev/null

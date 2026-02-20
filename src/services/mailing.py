@@ -1,8 +1,8 @@
-# src/services/mailing.py
 """Email service for payslips via Thunderbird CLI only. No SMTP, no credentials."""
 
 import subprocess
 from pathlib import Path
+from urllib.parse import quote
 
 
 class EmailSender:
@@ -18,9 +18,6 @@ class EmailSender:
                 continue
         return None
 
-    def _escape(self, value):
-        return value.replace('"', '\\"').replace(',', '\\,').replace('\n', '\\n')
-
     def send_payslip(self, recipient_email, employee_name, month, pdf_path):
         if not recipient_email or not Path(pdf_path).exists():
             return False, "Invalid email or PDF not found"
@@ -28,22 +25,21 @@ class EmailSender:
             return False, "Thunderbird not found"
 
         subject = f"Payslip for {month} - {employee_name}"
-        body = f"""Dear {employee_name},\n\nPlease find attached your payslip for {month}.\n\nBest regards,\nHR Team"""
+        body = f"""Dear {employee_name.title()},
+
+Please find attached your payslip for {month}.
+
+Best regards,
+HR"""
 
         try:
-            args = f'to={recipient_email},subject={self._escape(subject)},body={self._escape(body)},attachment={pdf_path}'
+            args = f'to={recipient_email},subject={quote(subject)},body={quote(body)},attachment={pdf_path}'
             subprocess.run([self.thunderbird_cmd, "-compose", args], check=True, capture_output=True, timeout=None)
             return True, f"Compose opened for {recipient_email}"
         except Exception as e:
             return False, str(e)
 
     def send_bulk(self, payslip_list):
-        """
-        Send multiple payslips via Thunderbird.
-        Opens one compose window per email (user reviews & sends each).
-        payslip_list: [{"email": "...", "name": "...", "month": "...", "pdf": "..."}, ...]
-        Returns: {"success": int, "failed": int, "errors": [...]}
-        """
         results = {"success": 0, "failed": 0, "errors": []}
         for p in payslip_list:
             ok, msg = self.send_payslip(p["email"], p["name"], p["month"], p["pdf"])

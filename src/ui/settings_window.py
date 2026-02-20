@@ -1,4 +1,4 @@
-# src/ui/settings_window.py
+#!./venv/bin/python3
 """
 Settings window for Zedulo Payslips (Tkinter version).
 Mousewheel works over all areas - scrollbar, labels, entries, buttons, empty space.
