@@ -7,8 +7,6 @@ from pathlib import Path
 import shutil
 import subprocess
 
-settings = ConfigManager().load()
-
 class Column_header:
     def __init__(self, **kwargs):
         self.employee_sheet = kwargs.get("spreadsheet", None)
@@ -57,12 +55,13 @@ class PayslipGenerator:
         Iterates over every non-empty row of "employee data".
         Fills payslip template file.
         """
+        self.settings = ConfigManager().load()
         self.progress_callback = kwargs.get("progress_callback", None)
         self.counter = 0
         self.total   = 0
 
         # Load Employee Spreadsheet
-        self.employee_sheet_filepath = settings["EMPLOYEE_SPREADSHEET_FILEPATH"]
+        self.employee_sheet_filepath = self.settings["EMPLOYEE_SPREADSHEET_FILEPATH"]
         self.month_no       = month_no
         self.month          = datetime(1970, month_no, 1).strftime("%B")
         self.employee_sheet = None
@@ -78,114 +77,114 @@ class PayslipGenerator:
     def _init_employee_sheet_headers(self):
         # Find (important) Column Headers
         self.employee_sheet_headers = {
-            "name"          : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_NAME_HEADER"]),
-            "staff_number"  : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_STAFF_NUMBER_HEADER"]),
-            "email"         : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_EMAIL_HEADER"]),
-            "tin"           : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_TIN_HEADER"]),
-            "position"      : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_POSITION_HEADER"]),
-            "department"    : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_DEPARTMENT_HEADER"]),
-            "account_number": Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_ACCOUNT_NUMBER_HEADER"]),
-            "gross_income"  : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_GROSS_INCOME_HEADER"]),
-            "untaxed_bonus" : Column_header(spreadsheet=self.employee_sheet, header=settings["EMPLOYEE_UNTAXED_BONUS_HEADER"])
+            "name"          : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_NAME_HEADER"]),
+            "staff_number"  : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_STAFF_NUMBER_HEADER"]),
+            "email"         : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_EMAIL_HEADER"]),
+            "tin"           : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_TIN_HEADER"]),
+            "position"      : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_POSITION_HEADER"]),
+            "department"    : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_DEPARTMENT_HEADER"]),
+            "account_number": Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_ACCOUNT_NUMBER_HEADER"]),
+            "gross_income"  : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_GROSS_INCOME_HEADER"]),
+            "untaxed_bonus" : Column_header(spreadsheet=self.employee_sheet, header=self.settings["EMPLOYEE_UNTAXED_BONUS_HEADER"])
         }
 
     def _init_template_sheet_cells(self):
         self.template_sheet_cells = {
             "payslip_date": {
-                "location": settings["TEMPLATE_PAYSLIP_DATE_CELL"],
+                "location": self.settings["TEMPLATE_PAYSLIP_DATE_CELL"],
                 "value"   : f"Date: {datetime.now().strftime('%d/%m/%Y')}"
              },
             "payslip_period" : {
-                "location": settings["TEMPLATE_PAYSLIP_PERIOD_CELL"],
+                "location": self.settings["TEMPLATE_PAYSLIP_PERIOD_CELL"],
                 "value"   : f"{self.start_datetime_str} - {self.end_datetime_str}"
             },
             "payslip_number" : {
-                "location": settings["TEMPLATE_PAYSLIP_NUMBER_CELL"],
+                "location": self.settings["TEMPLATE_PAYSLIP_NUMBER_CELL"],
                 "value"   : f"ZED{self.month_no}"
             },
             "name" : {
-                "location": settings["TEMPLATE_NAME_CELL"],
+                "location": self.settings["TEMPLATE_NAME_CELL"],
                 "value"   : None
             },
             "staff_number" : {
-                "location": settings["TEMPLATE_STAFF_NUMBER_CELL"],
+                "location": self.settings["TEMPLATE_STAFF_NUMBER_CELL"],
                 "value"   : None
             },
             "email" : {
-                "location": settings["TEMPLATE_EMAIL_CELL"],
+                "location": self.settings["TEMPLATE_EMAIL_CELL"],
                 "value"   : None
             },
             "tin" : {
-                "location": settings["TEMPLATE_TIN_CELL"],
+                "location": self.settings["TEMPLATE_TIN_CELL"],
                 "value"   : None
             },
             "position" : {
-                "location": settings["TEMPLATE_POSITION_CELL"],
+                "location": self.settings["TEMPLATE_POSITION_CELL"],
                 "value"   : None
             },
             "department" : {
-                "location": settings["TEMPLATE_DEPARTMENT_CELL"],
+                "location": self.settings["TEMPLATE_DEPARTMENT_CELL"],
                 "value"   : None
             },
             "account_number": {
-                "location": settings["TEMPLATE_ACCOUNT_NUMBER_CELL"],
+                "location": self.settings["TEMPLATE_ACCOUNT_NUMBER_CELL"],
                 "value"   : None
             },
             "gross_income"  : {
-                "location": settings["TEMPLATE_GROSS_INCOME_CELL"],
+                "location": self.settings["TEMPLATE_GROSS_INCOME_CELL"],
                 "value"   : None
             },
             "untaxed_bonus" : {
-                "location": settings["TEMPLATE_UNTAXED_BONUS_CELL"],
+                "location": self.settings["TEMPLATE_UNTAXED_BONUS_CELL"],
                 "value"   : None
             },
 
             "employee_ssf" : {
-                "location": settings["TEMPLATE_EMPLOYEE_SSF_CELL"],
+                "location": self.settings["TEMPLATE_EMPLOYEE_SSF_CELL"],
                 "value"   : None
             },
             "income_tax"   : {
-                "location": settings["TEMPLATE_INCOME_TAX_CELL"],
+                "location": self.settings["TEMPLATE_INCOME_TAX_CELL"],
                 "value"   : None
             },
             "tier_2"       : {
-                "location": settings["TEMPLATE_TIER_2_CELL"],
+                "location": self.settings["TEMPLATE_TIER_2_CELL"],
                 "value"   : None
             },
             "employer_ssf" : {
-                "location": settings["TEMPLATE_EMPLOYER_SSF_CELL"],
+                "location": self.settings["TEMPLATE_EMPLOYER_SSF_CELL"],
                 "value"   : None
             },
             "bonus_tax"    : {
-                "location": settings["TEMPLATE_BONUS_TAX_CELL"],
+                "location": self.settings["TEMPLATE_BONUS_TAX_CELL"],
                 "value"   : None
             },
             "total_deductions" : {
-                "location": settings["TEMPLATE_TOTAL_DEDUCTIONS_CELL"],
+                "location": self.settings["TEMPLATE_TOTAL_DEDUCTIONS_CELL"],
                 "value"   : None
             },
             "total_contributions": {
-                "location": settings["TEMPLATE_TOTAL_CONTRIBUTIONS_CELL"],
+                "location": self.settings["TEMPLATE_TOTAL_CONTRIBUTIONS_CELL"],
                 "value"   : None
             },
             "total_income" : {
-                "location": settings["TEMPLATE_TOTAL_INCOME_CELL"],
+                "location": self.settings["TEMPLATE_TOTAL_INCOME_CELL"],
                 "value"   : None
             },
             "ytd_tier_1" : {
-                "location": settings["TEMPLATE_YTD_TIER_1_CELL"],
+                "location": self.settings["TEMPLATE_YTD_TIER_1_CELL"],
                 "value"   : None
             },
             "ytd_tier_2" : {
-                "location": settings["TEMPLATE_YTD_TIER_2_CELL"],
+                "location": self.settings["TEMPLATE_YTD_TIER_2_CELL"],
                 "value"   : None
             },
             "ytd_gross_pay" : {
-                "location": settings["TEMPLATE_YTD_GROSS_PAY_CELL"],
+                "location": self.settings["TEMPLATE_YTD_GROSS_PAY_CELL"],
                 "value"   : None
             },
             "net_income"   : {
-                "location": settings["TEMPLATE_NET_INCOME_CELL"],
+                "location": self.settings["TEMPLATE_NET_INCOME_CELL"],
                 "value"   : None
             }
         }
@@ -212,9 +211,9 @@ class PayslipGenerator:
         for k, v in employee_entry.items():
             employee_entry[k] = employee_sheet_row[v.column_index].value if v.column else None
 
-        assert type(employee_entry["staff_number"]) == int, f"For {self.month}, {employee_entry['name']} has no proper {settings['EMPLOYEE_STAFF_NUMBER_HEADER']} (it must be a number)"
-        assert employee_entry["gross_income"] is not None, f"For {self.month}, {employee_entry['name']} has no {settings['EMPLOYEE_GROSS_INCOME_HEADER']} in the employee spreadsheet at least put 0 there"
-        assert employee_entry["untaxed_bonus"] is not None, f"For {self.month}, {employee_entry['name']} has no {settings['EMPLOYEE_UNTAXED_BONUS_HEADER']} in the employee spreadsheet at least put 0 there"
+        assert type(employee_entry["staff_number"]) == int, f"For {self.month}, {employee_entry['name']} has no proper {self.settings['EMPLOYEE_STAFF_NUMBER_HEADER']} (it must be a number)"
+        assert employee_entry["gross_income"] is not None, f"For {self.month}, {employee_entry['name']} has no {self.settings['EMPLOYEE_GROSS_INCOME_HEADER']} in the employee spreadsheet at least put 0 there"
+        assert employee_entry["untaxed_bonus"] is not None, f"For {self.month}, {employee_entry['name']} has no {self.settings['EMPLOYEE_UNTAXED_BONUS_HEADER']} in the employee spreadsheet at least put 0 there"
 
         employee_entry.update(ghana_tax_calculator(int(employee_entry["gross_income"] *100), int(employee_entry["untaxed_bonus"] *100)).items())
 
@@ -252,11 +251,11 @@ class PayslipGenerator:
         }
 
     def write_payslip_xlsx(self, payslip_details: dict):
-        output_dir = Path(settings["EMPLOYEE_PAYSLIPS_FOLDER"]) / str(self.month)
+        output_dir = Path(self.settings["EMPLOYEE_PAYSLIPS_FOLDER"]) / str(self.month)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{payslip_details['name']['value'].replace(' ', '_')}_{self.month}_Payslip.xlsx"
 
-        shutil.copy2(settings["PAYSLIP_TEMPLATE_FILEPATH"], output_path)
+        shutil.copy2(self.settings["PAYSLIP_TEMPLATE_FILEPATH"], output_path)
 
         wb = load_workbook(output_path)
         ws = wb.active
