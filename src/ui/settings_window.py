@@ -181,7 +181,7 @@ class SettingsWindow(tk.Toplevel):
                 if "EMPLOYEE_SPREADSHEET_FILEPATH" in self.entries:
                     employee_sheet_path = self.entries["EMPLOYEE_SPREADSHEET_FILEPATH"].get()
                 else:
-                    employee_sheet_path = self.config.get("EMPLOYEE_SPREADSHEET_FILEPATH")
+                    employee_sheet_path = self.config["EMPLOYEE_SPREADSHEET_FILEPATH"]
 
                 if not employee_sheet_path or not Path(employee_sheet_path).exists():
                     messagebox.showerror("Invalid Source", "Employee file path is not set or does not exist!", parent=self)
@@ -214,13 +214,13 @@ class SettingsWindow(tk.Toplevel):
                 if not val:
                     continue
                 try:
-                    template_path = self.entries.get("PAYSLIP_TEMPLATE_FILEPATH", tk.StringVar(value=self.config.get("PAYSLIP_TEMPLATE_FILEPATH", ""))).get()
+                    template_path = self.entries["PAYSLIP_TEMPLATE_FILEPATH"].get()
                     if template_path and Path(template_path).exists():
-                        load_workbook(template_path)[val]
+                        load_workbook(template_path).active[val]
                     else:
-                        load_workbook(self.config["PAYSLIP_TEMPLATE_FILEPATH"])[val]
-                except:
-                    messagebox.showerror("Invalid Cell reference", f"\"{val}\" is not a valid cell in the template file!", parent=self)
+                        load_workbook(self.config["PAYSLIP_TEMPLATE_FILEPATH"]).active[val]
+                except Exception as e:
+                    messagebox.showerror("Invalid Cell reference", f"\"{val}\" location in the template sheet could not be validated!\nError:\n{e}", parent=self)
                     return
 
             new_config[key] = val

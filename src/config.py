@@ -14,10 +14,10 @@ APP_CONFIG = {
     # SOURCE XLSX HEADERS
     "EMPLOYEE_NAME_HEADER"          : "Name",
     "EMPLOYEE_STAFF_NUMBER_HEADER"  : "Staff Number",
-    "EMPLOYEE_EMAIL_HEADER"         : "Email",   # not included in spreadsheet
-    "EMPLOYEE_TIN_HEADER"           : "TIN",   # not included in spreadsheet
+    "EMPLOYEE_EMAIL_HEADER"         : "",   # not included in spreadsheet
+    "EMPLOYEE_TIN_HEADER"           : "",   # not included in spreadsheet
     "EMPLOYEE_POSITION_HEADER"      : "Position",
-    "EMPLOYEE_DEPARTMENT_HEADER"    : "Department",   # not included in spreadsheet
+    "EMPLOYEE_DEPARTMENT_HEADER"    : "",   # not included in spreadsheet
     "EMPLOYEE_ACCOUNT_NUMBER_HEADER": "Account Number",
     "EMPLOYEE_GROSS_INCOME_HEADER"  : "Basic Salary",
     "EMPLOYEE_UNTAXED_BONUS_HEADER" : "Bonus",
