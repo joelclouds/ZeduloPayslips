@@ -10,7 +10,7 @@ echo "🗑️  Uninstalling ZeduloPayslips..."
 # Remove application data and config
 echo "   Removing application data..."
 rm -rf "$HOME/.zedulopayslips" &> /dev/null
-rm -rf "$HOME/zedulopayslips" &> /dev/null # Remove old data folder if exists
+rm -rf "$HOME/zedulopayslips" &> /dev/null
 
 # Remove desktop entry (user space)
 echo "   Removing desktop entry..."

@@ -260,6 +260,13 @@ class PayslipGenerator:
         wb = load_workbook(output_path)
         ws = wb.active
 
+        # ✅ Capture & Re-add images (Openpyxl fails to keep them by default)
+        images = list(ws._images)
+        ws._images.clear()
+
+        for img in images:
+            ws.add_image(img)
+
         for v in payslip_details.values():
             if v['location']:
                 ws[v['location']] = v.get('value')

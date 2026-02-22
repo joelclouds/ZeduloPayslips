@@ -1,42 +1,51 @@
+```markdown
 # ZeduloPayslips
 
-A desktop application for generating employee payslips from Excel templates. Built with Python and integrated with LibreOffice for spreadsheet processing.
+A desktop application for generating employee payslips from Excel templates. Built with Python, openpyxl, and Tkinter.
 
 ## 📋 Features
 
-- Generate individual payslips for multiple employees from a master spreadsheet
+- Generate payslips for multiple employees from a master spreadsheet
 - Customizable Excel templates for payslip formatting
 - Automatic calculation of taxes, SSF contributions, and net pay
-- Employee data management
-- Batch processing of payslips
+- Batch processing across multiple months
+- Export payslips to PDF for distribution
+- Email payslips via Thunderbird (no SMTP credentials required)
 - Desktop integration with application menu launcher
+- Linux-native installation with venv
 
 ## 🏗️ Project Structure
 
 ```
 ZeduloPayslips/
-├── assets/                 # Icons and desktop entry files
-│   ├── zedulopayslips.png
-│   └── zedulo-payslips.desktop
-├── bin/                    # Compiled executables (created during install)
-├── scripts/                # Installation scripts
-│   ├── install.sh
-│   └── uninstall.sh
-├── src/                    # Source code
-│   ├── config.py          # Application configuration
-│   ├── config_manager.py  # Config file management
-│   ├── setup.py           # Installation setup script
-│   ├── services/          # Business logic
-│   └── ui/                # User interface
-├── main.py                 # Application entry point
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
+├── assets/                     # Icons and images
+│   └── zedulopayslips.png
+├── scripts/                    # Installation scripts
+│   ├── install.sh             # Install script
+│   ├── uninstall.sh           # Uninstall script
+│   └── setup.py               # Python setup logic
+├── src/                        # Source code
+│   ├── config.py              # Default Application configuration
+│   ├── config_manager.py      # Config file management
+│   ├── services/              # Business logic
+│   │   ├── payslip_generator.py
+│   │   ├── file_explorer.py
+│   │   └── mailing.py
+│   └── ui/                    # User interface
+│       ├── app.py
+│       └── settings_window.py
+├── main.py                     # Application entry point
+├── requirements.txt            # Python dependencies
+├── README.md                   # This file
+└── LICENSE 
 ```
 
 ## 🔧 Prerequisites
 
-- **Python 3.8+**
-- **LibreOffice** (for Excel file processing)
+- **Python 3.10+**
+- **python3-venv**
+- **LibreOffice** (for XLSX → PDF conversion)
+- **Thunderbird** (for payslip emailing)
 - **Linux desktop environment** (GNOME, KDE, XFCE, etc.)
 
 ## 🚀 Installation
@@ -51,42 +60,52 @@ cd ZeduloPayslips
 
 ### What the Installer Does
 
-1. **Checks internet connectivity**
-2. **Installs LibreOffice** (if not present)
-3. **Creates Python virtual environment**
-4. **Installs dependencies** from `requirements.txt`
-5. **Compiles application** into standalone executable using PyInstaller
-6. **Creates application directory** at `~/.zedulopayslips/`
-7. **Installs desktop entry** for application menu integration
-8. **Updates desktop database** for immediate access
+1. **Checks system dependencies** (Python, LibreOffice, Thunderbird)
+2. **Creates application directory** at `~/.zedulopayslips/`
+3. **Copies project files** to app directory
+4. **Creates Python virtual environment**
+5. **Installs dependencies** from `requirements.txt`
+6. **Creates desktop entry** for application menu integration
+7. **Updates desktop database** for immediate access
 
-After installation, you can find **ZeduloPayslips** in your application menu!
+After installation, find **ZeduloPayslips** in your application menu!
 
 ## 📦 Dependencies
 
-- **PyInstaller** - Creates standalone executable
 - **openpyxl** - Excel file manipulation
-- **CustomTkinter** - Modern GUI framework
-- Additional dependencies listed in `requirements.txt`
+- **openpyxl-image-loader** - Image preservation in templates
+- **Pillow** - Image processing
+- **tkinter** - Desktop UI (included with Python)
+- Additional dependencies in `requirements.txt`
 
 ## 🎯 Usage
 
-1. Launch ZeduloPayslips from your application menu
-2. Configure your employee spreadsheet and payslip template paths
-3. Load employee data from Excel
-4. Generate individual payslips
-5. Output PDFs are saved to your specified directory
+1. Launch **ZeduloPayslips** from your application menu
+2. Configure paths in **Settings**:
+   - Employee spreadsheet filepath
+   - Payslip template filepath
+   - Output folder for generated payslips
+3. Select month(s) to generate
+4. Click **Generate Payslips**
+5. XLSX files are generated, then converted to PDF automatically
+6. Review PDFs, open folder, or email individual payslips
+7. Use **Send All Emails** to batch-open Thunderbird compose windows
 
 ## ⚙️ Configuration
 
-The application stores configuration in `~/.zedulopayslips/config.json`:
+Configuration stored in `~/.zedulopayslips/config.json`:
 
 ```json
 {
     "EMPLOYEE_SPREADSHEET_FILEPATH": "~/Downloads/EMPLOYEES_PAYROLL_TEMPLATE.xlsx",
     "PAYSLIP_TEMPLATE_FILEPATH": "~/Downloads/PAYSLIP_TEMPLATE.xlsx",
     "EMPLOYEE_PAYSLIPS_FOLDER": "~/zedulopayslips",
-    // ... additional configuration options
+    "EMPLOYEE_NAME_HEADER": "Employee Name",
+    "EMPLOYEE_EMAIL_HEADER": "Email",
+    "BASIC_SALARY_CELL": "B5",
+    "TAX_CELL": "B10",
+    "SSF_CELL": "B11",
+    "NET_PAY_CELL": "B12"
 }
 ```
 
@@ -98,9 +117,9 @@ cd ZeduloPayslips
 ```
 
 This removes:
-- The application directory (`~/.zedulopayslips/`)
+- Application directory (`~/.zedulopayslips/`)
 - Desktop entry
-- Project files (optional)
+- Virtual environment
 
 ## 🛠️ Development
 
@@ -108,7 +127,7 @@ This removes:
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/ZeduloPayslips.git
+git clone https://github.com/joelclouds/ZeduloPayslips.git
 cd ZeduloPayslips
 
 # Create virtual environment
@@ -119,52 +138,45 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run in development mode
-python main.py
-```
-
-### Building manually
-
-```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Build with PyInstaller
-pyinstaller --onefile \
-    --name zedulopayslips \
-    --windowed \
-    --icon=assets/zedulopayslips.png \
-    main.py
+python3 main.py
 ```
 
 ## 📝 License
 
-[Your License Here]
-
-## 👥 Authors
-
-[Your Name/Organization]
+MIT License
 
 ## 🙏 Acknowledgments
 
-- Built with Python and CustomTkinter
-- Uses LibreOffice for spreadsheet processing
-- Inspired by payroll management needs
+Idea Brainstorming & Tax calculation QA by:
+- [Cyril Dzamaklu](https://www.linkedin.com/in/cyril-elorm-dzamaklu)
+- [Patience Tsikudo](https://www.linkedin.com/in/patience-tsikudo-7551549b)
+
+Uses **openpyxl** for spreadsheet processing.
+Uses **LibreOffice** for XLSX → PDF conversion.
+Uses **Thunderbird** for mailing without managing sensitive email credentials.
+Inspired by payroll management needs.
 
 ## 🐛 Troubleshooting
-
-### "PyInstaller not found" error
-```bash
-pip install pyinstaller
-```
 
 ### Desktop entry not appearing
 ```bash
 update-desktop-database ~/.local/share/applications/
 ```
 
-### LibreOffice missing
+### Thunderbird not found (mailing fails)
+```bash
+sudo apt install thunderbird  # Debian/Ubuntu
+```
+
+### LibreOffice not found (PDF generation fails)
 ```bash
 sudo apt install libreoffice  # Debian/Ubuntu
+```
+
+### Permission denied on install
+```bash
+chmod +x scripts/install.sh
+./scripts/install.sh
 ```
 
 ## 📞 Support & Contact
@@ -173,4 +185,5 @@ For issues, questions, or feature requests:
 - 📧 Email: [Joel Opoku](mailto:joelclouds@gmail.com) or [jopoku@zedulo.com](mailto:jopoku@zedulo.com)
 - 🐛 GitHub Issues: [Open an issue](https://github.com/joelclouds/ZeduloPayslips/issues)
 
-We welcome your feedback and contributions!
+Feedback and contributions are welcome.
+```
