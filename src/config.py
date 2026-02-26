@@ -52,6 +52,6 @@ APP_CONFIG = {
 
     # Misc
     "MONEY_PREFIX": "₵",
-    "QUICK_MODE_ENABLED": True,
+    "QUICK_MODE_ENABLED": False,
     "USERNAME": "Administrator"
 }
