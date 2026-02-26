@@ -3,7 +3,7 @@ from pathlib import Path
 from config import APP_HOME_DIR, APP_CONFIG_FILEPATH, APP_CONFIG, APP_NAME
 import sys
 
-def setup():
+def setup(fresh):
     Path(APP_HOME_DIR).mkdir(exist_ok=True)
 
     # Copy project
@@ -27,8 +27,19 @@ def setup():
 
     # Create config
     Path(APP_CONFIG_FILEPATH).parent.mkdir(exist_ok=True)
+    old_cfg = {}
+
+    if not fresh:
+        with open(APP_CONFIG_FILEPATH, "r") as f:
+            old_cfg = json.load(f)
+
     with open(APP_CONFIG_FILEPATH, "w") as f:
-        json.dump(APP_CONFIG, f, indent=4)
+        cfg = APP_CONFIG.copy()
+
+        if not fresh:
+            cfg.update(old_cfg)
+
+        json.dump(cfg, f, indent=4)
 
     # Desktop entry
     desktop = Path.home() / ".local" / "share" / "applications" / f"{APP_NAME.lower()}.desktop"
@@ -52,4 +63,6 @@ Terminal=False;
     print(f"\n✅ {APP_NAME} installed!")
 
 if __name__ == "__main__":
-    setup()
+    isfresh = ("--fresh" in sys.argv)
+
+    setup(isfresh)

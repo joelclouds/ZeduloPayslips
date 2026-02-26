@@ -22,6 +22,6 @@ sudo apt update && sudo apt install -y libreoffice
 
 pushd scripts &> /dev/null
 
-python3 ../src/setup.py --fresh
+python3 ../src/setup.py
 
 popd &> /dev/null

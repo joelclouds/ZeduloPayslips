@@ -12,15 +12,16 @@ APP_CONFIG = {
     "EMPLOYEE_PAYSLIPS_FOLDER"     : f"{HOME_DIR}/{APP_NAME.lower()}",
 
     # SOURCE XLSX HEADERS
-    "EMPLOYEE_NAME_HEADER"          : "Name",
-    "EMPLOYEE_STAFF_NUMBER_HEADER"  : "Staff Number",
-    "EMPLOYEE_EMAIL_HEADER"         : "",   # not included in spreadsheet
-    "EMPLOYEE_TIN_HEADER"           : "",   # not included in spreadsheet
-    "EMPLOYEE_POSITION_HEADER"      : "Position",
-    "EMPLOYEE_DEPARTMENT_HEADER"    : "",   # not included in spreadsheet
-    "EMPLOYEE_ACCOUNT_NUMBER_HEADER": "Account Number",
-    "EMPLOYEE_GROSS_INCOME_HEADER"  : "Basic Salary",
-    "EMPLOYEE_UNTAXED_BONUS_HEADER" : "Bonus",
+    "EMPLOYEE_NAME_HEADER"           : "Name",
+    "EMPLOYEE_STAFF_NUMBER_HEADER"   : "Staff Number",
+    "EMPLOYEE_EMAIL_HEADER"          : "",   # not included in spreadsheet
+    "EMPLOYEE_TIN_HEADER"            : "",   # not included in spreadsheet
+    "EMPLOYEE_POSITION_HEADER"       : "Position",
+    "EMPLOYEE_DEPARTMENT_HEADER"     : "",   # not included in spreadsheet
+    "EMPLOYEE_ACCOUNT_NUMBER_HEADER" : "Account Number",
+    "EMPLOYEE_GROSS_INCOME_HEADER"   : "Basic Salary",
+    "EMPLOYEE_UNTAXED_BONUS_HEADER"  : "Bonus",
+    "EMPLOYEE_EXTRA_DEDUCTION_HEADER": "Deductions",
 
     # TEMPLATE XLSX CELLS
     "TEMPLATE_PAYSLIP_DATE_CELL"       : "A9",
@@ -43,8 +44,12 @@ APP_CONFIG = {
     "TEMPLATE_TOTAL_INCOME_CELL"       : "C37",
     "TEMPLATE_TOTAL_DEDUCTIONS_CELL"   : "D37",
     "TEMPLATE_TOTAL_CONTRIBUTIONS_CELL": "E37",
+    "TEMPLATE_EXTRA_DEDUCTION_CELL"    : "",
     "TEMPLATE_YTD_TIER_1_CELL"         : "C40",
     "TEMPLATE_YTD_TIER_2_CELL"         : "D40",
     "TEMPLATE_YTD_GROSS_PAY_CELL"      : "E40",
-    "TEMPLATE_NET_INCOME_CELL"         : "C43"
+    "TEMPLATE_NET_INCOME_CELL"         : "C43",
+
+    # Misc
+    "MONEY_PREFIX": "₵"
 }

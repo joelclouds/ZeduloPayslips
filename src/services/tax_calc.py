@@ -1,7 +1,7 @@
-def ghana_tax_calculator(gross_income_pesewas: int, untaxed_bonus_pesewas: int, calc_tier_2=True, rounding="nearest"):
+def ghana_tax_calculator(gross_income_pesewas: int, untaxed_bonus_pesewas: int, extra_deduction_pesewas: int = 0, calc_tier_2=True, rounding="nearest"):
     """
     Calculates Ghana income tax (PAYE), employee_ssf, and net income on a monthly basis.
-    
+
     ⚠️  ALL VALUES ARE IN PESEWAS (integers) to avoid floating point errors.
         1 Ghana Cedi (GHS) = 100 pesewas
 
@@ -77,9 +77,9 @@ def ghana_tax_calculator(gross_income_pesewas: int, untaxed_bonus_pesewas: int, 
     bonus = untaxed_bonus_pesewas - bonus_tax
 
     # Totals
-    total_deduct = employee_ssf + income_tax
-    total_contrib = tier_2 + employer_ssf
-    net_income = gross_income_pesewas - total_deduct + bonus
+    total_deductions = employee_ssf + income_tax
+    total_contributions = tier_2 + employer_ssf
+    net_income = gross_income_pesewas - total_deductions + bonus - extra_deduction_pesewas
     total_income = gross_income_pesewas + untaxed_bonus_pesewas
 
     return {
@@ -90,8 +90,9 @@ def ghana_tax_calculator(gross_income_pesewas: int, untaxed_bonus_pesewas: int, 
         "employer_ssf": employer_ssf,
         "untaxed_bonus": untaxed_bonus_pesewas,
         "bonus_tax": bonus_tax,
-        "total_deductions": total_deduct,
-        "total_contributions": total_contrib,
+        "total_deductions": total_deductions,
+        "total_contributions": total_contributions,
+        "extra_deduction": extra_deduction_pesewas,
         "total_income": total_income,
         "net_income": net_income,
     }
@@ -106,14 +107,14 @@ def ghs_to_pesewas(ghs_amount: float) -> int:
     return int(round(ghs_amount * 100))
 
 
-def pesewas_to_ghs(pesewas_amount: int) -> float:
+def pesewas_to_ghs(pesewa_amount: int) -> float:
     """Convert pesewas to Ghana Cedis (float for display only)."""
-    return pesewas_amount / 100
+    return pesewa_amount / 100
 
 
-def format_ghs(pesewas_amount: int) -> str:
+def format_ghs(pesewa_amount: int, prefix: str="") -> str:
     """Format pesewas as Ghana Cedi string (e.g., 'GHS 5,000.00')."""
-    return f"GHS {pesewas_amount / 100:,.2f}"
+    return f"{prefix}{pesewa_amount / 100:,.2f}"
 
 
 # --------------------------
@@ -126,11 +127,13 @@ if __name__ == "__main__":
 
     gross = 500000  # GHS 5,000.00
     bonus = 50000   # GHS 500.00
+    dues  = 100000  # GHS 1,000.00
 
     print(f"\nInput: Gross = {format_ghs(gross)}, Bonus = {format_ghs(bonus)}\n")
 
     for mode in ("nearest", "truncate", "ceil"):
-        result = ghana_tax_calculator(gross, bonus, rounding=mode)
+        result = ghana_tax_calculator(gross, bonus, dues, rounding=mode)
+        print(result)
         print(f"📌 Rounding Mode: '{mode}'")
         print(f"   Employee SSF:  {format_ghs(result['employee_ssf'])}")
         print(f"   Income Tax:    {format_ghs(result['income_tax'])}")
