@@ -317,7 +317,8 @@ class PayslipGenerator:
         self.total += len(employee_spreadsheet_rows)
 
         for row_num, row in enumerate(employee_spreadsheet_rows, start=2):
-            assert any([cell.value is not None for cell in row]), f"For {self.month}, row {row_num} is completely empty. Please fix that."
+            if not any([cell.value is not None for cell in row]):
+                continue
 
             payslip_info = self.generate_payslip(row)
             self.counter += 1
