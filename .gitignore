@@ -18,7 +18,7 @@ venv/
 # Backups
 *.bkp
 *.bak
-*.save
+*.save*
 *~
 
 # IDE
