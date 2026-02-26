@@ -37,14 +37,14 @@ class App:
         # Title
         tk.Label(
             main_frame,
-            text="Welcome Administrator",
-            font=("Helvetica", 24, "bold")
+            text=f"Welcome {self.config['USERNAME']},",
+            font=("Helvetica", 32, "bold")
         ).grid(row=0, column=0, pady=(0, 20))
 
         # Subtitle
         tk.Label(
             main_frame,
-            text="Select month(s) and generate payslips now:",
+            text="Shall we start the payslip generation process now?\n...\nSimply provide the month(s), then data and the template",
             font=("Helvetica", 14)
         ).grid(row=1, column=0, pady=(0, 30))
 

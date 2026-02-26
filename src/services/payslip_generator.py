@@ -6,6 +6,7 @@ from openpyxl import load_workbook
 from pathlib import Path
 import shutil
 import subprocess
+from threading import Thread
 
 class Column_header:
     def __init__(self, **kwargs):
@@ -235,10 +236,9 @@ class PayslipGenerator:
         employee_entry.update(ytd_tracker.get_cumulative_ytd(self.month_no, employee_entry))
 
         # Convert monetary fields from pesewas to GHS for export
-        money_prefix = self.settings["MONEY_PREFIX"]
         for k, v in employee_entry.items():
             if (k in list(ghana_tax_calculator(0,0).keys()) or "ytd" in k):
-                employee_entry[k] = format_ghs(pesewa_amount=v, prefix=money_prefix)
+                employee_entry[k] = format_ghs(pesewa_amount=v, prefix=self.settings["MONEY_PREFIX"])
 
         payslip_details = self.template_sheet_cells.copy()
 
@@ -254,7 +254,7 @@ class PayslipGenerator:
         payslip_xlsx_filepath = self.write_payslip_xlsx(payslip_details)
         assert payslip_xlsx_filepath, f"For {self.month}, {employee_entry['name']}, we  failed to create a payslip spreadsheet from the template"
 
-        payslip_pdf_filepath = self.spreadsheet_to_pdf(payslip_xlsx_filepath)
+        payslip_pdf_filepath = self.spreadsheet_to_pdf(payslip_xlsx_filepath, bg=self.settings['QUICK_MODE_ENABLED'])
         assert payslip_pdf_filepath, f"For {self.month}, {employee_entry['name']}, failed to convert payslip spreadsheet to pdf"
 
         return {
@@ -289,28 +289,33 @@ class PayslipGenerator:
 
         return str(output_path)
 
-    def spreadsheet_to_pdf(self, spreadsheet_filepath, trusting=True):
+    def spreadsheet_to_pdf(self, spreadsheet_filepath, bg=True):
         spreadsheet_path = Path(spreadsheet_filepath)
-
-        conversion = subprocess.Popen(
-            ["soffice", "--headless", "--convert-to", "pdf",
-             "--outdir", str(spreadsheet_path.parent), str(spreadsheet_path)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-
         pdf_path = spreadsheet_path.with_suffix('.pdf')
 
-        if not trusting:
-            conversion.wait()
-            subprocess.Popen(['pkill', '-9', '-f', 'soffice.bin.*--headless'],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        def convert():
+            pending = True
+
+            while pending:
+                subprocess.run(['rm', pdf_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                result = subprocess.run(
+                    ["soffice", "--headless", "--convert-to", "pdf",
+                     "--outdir", str(spreadsheet_path.parent), str(spreadsheet_path)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
+                pending = not pdf_path.exists()
+
+        if bg:
+            Thread(target=convert, daemon=True).start()
+            return str(pdf_path)
+        else:
+            convert()
             return str(pdf_path) if pdf_path.exists() else None
 
-        return str(pdf_path) if spreadsheet_path.exists() else None
-
     def generate_payslips(self):
-        subprocess.Popen(['pkill', '-9', '-f', 'soffice.bin.*--headless'])
         employee_spreadsheet_rows = list( self.employee_sheet_rows_iter() )
 
         assert employee_spreadsheet_rows, "For {self.month}, no employee payroll records exist"

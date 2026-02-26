@@ -28,7 +28,6 @@ class SettingsWindow(tk.Toplevel):
         self._create_scrollable_area()
         self._build_ui()
 
-        # ✅ Bind mousewheel globally when window opens
         self._bind_mousewheel()
 
         self.after(200, lambda: self.attributes('-topmost', False))
@@ -44,10 +43,7 @@ class SettingsWindow(tk.Toplevel):
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.scrollable_frame = tk.Frame(self.canvas)
-
-        # Update scrollregion when frame resizes
         self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
-        # Update content width when canvas resizes
         self.canvas.bind("<Configure>", self._on_canvas_configure)
 
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
@@ -67,7 +63,7 @@ class SettingsWindow(tk.Toplevel):
     def _on_mousewheel(self, event):
         """
         Handle mousewheel by checking if scrollbar Y value actually changes.
-        Prevents jitter at top/bottom edges.
+        Mitigates jitter at top/bottom edges.
         """
         # 1. Get scrollbar position BEFORE scroll attempt
         before_first, before_last = self.scrollbar.get()
@@ -108,29 +104,43 @@ class SettingsWindow(tk.Toplevel):
             lbl.bind("<Button-4>", self._on_mousewheel, add="+")
             lbl.bind("<Button-5>", self._on_mousewheel, add="+")
 
-            entry = tk.Entry(parent, width=50)
-            entry.grid(row=row, column=1, sticky="ew", padx=pad, pady=(pad, 0))
-            entry.insert(0, self.config[key])
-            self.entries[key] = entry
-            # ✅ Bind mousewheel to entry so it passes through
-            entry.bind("<MouseWheel>", self._on_mousewheel, add="+")
-            entry.bind("<Button-4>", self._on_mousewheel, add="+")
-            entry.bind("<Button-5>", self._on_mousewheel, add="+")
+            if key.endswith("ENABLED"):
+                # ✅ Checkbox for boolean settings
+                var = tk.BooleanVar(value=self.config[key].lower() == "true" if isinstance(self.config[key], str) else bool(self.config[key]))
+                self.entries[key] = var  # Store BooleanVar instead of Entry
 
-            if "FILEPATH" in key:
-                btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_file(k))
-                btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
-                # ✅ Bind mousewheel to button so it passes through
-                btn.bind("<MouseWheel>", self._on_mousewheel, add="+")
-                btn.bind("<Button-4>", self._on_mousewheel, add="+")
-                btn.bind("<Button-5>", self._on_mousewheel, add="+")
-            elif "FOLDER" in key:
-                btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_dir(k))
-                btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
-                # ✅ Bind mousewheel to button so it passes through
-                btn.bind("<MouseWheel>", self._on_mousewheel, add="+")
-                btn.bind("<Button-4>", self._on_mousewheel, add="+")
-                btn.bind("<Button-5>", self._on_mousewheel, add="+")
+                cb = tk.Checkbutton(parent, variable=var, onvalue=True, offvalue=False)
+                cb.grid(row=row, column=1, sticky="w", padx=pad, pady=(pad, 0))
+                # ✅ Bind mousewheel to checkbox so it passes through
+                cb.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                cb.bind("<Button-4>", self._on_mousewheel, add="+")
+                cb.bind("<Button-5>", self._on_mousewheel, add="+")
+
+                # Empty column 2 for alignment
+                tk.Label(parent, text="").grid(row=row, column=2, padx=pad, pady=(pad, 0))
+            else:
+                # ✅ Entry for string/path settings
+                entry = tk.Entry(parent, width=50)
+                entry.grid(row=row, column=1, sticky="ew", padx=pad, pady=(pad, 0))
+                entry.insert(0, self.config[key])
+                self.entries[key] = entry
+                # ✅ Bind mousewheel to entry so it passes through
+                entry.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                entry.bind("<Button-4>", self._on_mousewheel, add="+")
+                entry.bind("<Button-5>", self._on_mousewheel, add="+")
+
+                if key.endswith("FILEPATH"):
+                    btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_file(k))
+                    btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
+                    btn.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                    btn.bind("<Button-4>", self._on_mousewheel, add="+")
+                    btn.bind("<Button-5>", self._on_mousewheel, add="+")
+                elif key.endswith("FOLDER"):
+                    btn = tk.Button(parent, text="Browse...", command=lambda k=key: self._browse_dir(k))
+                    btn.grid(row=row, column=2, padx=pad, pady=(pad, 0))
+                    btn.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                    btn.bind("<Button-4>", self._on_mousewheel, add="+")
+                    btn.bind("<Button-5>", self._on_mousewheel, add="+")
 
         parent.columnconfigure(0, weight=0)
         parent.columnconfigure(1, weight=1)
@@ -144,7 +154,6 @@ class SettingsWindow(tk.Toplevel):
 
         parent.grid_rowconfigure(row + 1, weight=1)
 
-        # Force scrollregion update after UI is built
         self.after_idle(self._on_frame_configure)
 
     def _browse_file(self, key):
@@ -166,15 +175,21 @@ class SettingsWindow(tk.Toplevel):
     def _save(self):
         new_config = {}
         for key, entry in self.entries.items():
-            val = entry.get().strip()
 
-            if "FILEPATH" in key and val and not Path(val).exists():
+            # EXTRACTION
+            if isinstance(entry, tk.BooleanVar):
+                val = entry.get() # boolean
+            else:
+                val = entry.get().strip()
+
+            # VALIDATION
+            if key.endswith("FILEPATH") and val and not Path(val).exists():
                 messagebox.showerror("Invalid Path", f"{val} does not exist!", parent=self)
                 return
-            elif "DIR" in key and val and not Path(val).is_dir():
+            elif key.endswith("FOLDER") and val and not Path(val).is_dir():
                 messagebox.showerror("Invalid Directory", f"{val} is not a directory!", parent=self)
                 return
-            elif "HEADER" in key.upper():
+            elif key.endswith("HEADER"):
                 if not val:
                     continue
                 employee_sheet_path = None
@@ -210,7 +225,7 @@ class SettingsWindow(tk.Toplevel):
                 except Exception as e:
                     messagebox.showerror("Error Validating Header", str(e), parent=self)
                     return
-            elif "CELL" in key:
+            elif key.endswith("CELL"):
                 if not val:
                     continue
                 try:
@@ -221,6 +236,12 @@ class SettingsWindow(tk.Toplevel):
                         load_workbook(self.config["PAYSLIP_TEMPLATE_FILEPATH"]).active[val]
                 except Exception as e:
                     messagebox.showerror("Invalid Cell reference", f"\"{val}\" location in the template sheet could not be validated!\nError:\n{e}", parent=self)
+                    return
+            elif key.endswith("ENABLED"):
+                try:
+                    assert type(val) == bool, f"'{key}' must be set to True or False"
+                except Exception as e:
+                    messagebox.showerror("Invalid Checkbox Value", f"Error:\n{e}", parent=self)
                     return
 
             new_config[key] = val
