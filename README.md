@@ -1,4 +1,3 @@
-```markdown
 # ZeduloPayslips
 
 A desktop application for generating employee payslips from Excel templates. Built with Python, openpyxl, and Tkinter.
@@ -199,4 +198,3 @@ For issues, questions, or feature requests:
 - 🐛 GitHub Issues: [Open an issue](https://github.com/joelclouds/ZeduloPayslips/issues)
 
 Feedback and contributions are welcome.
-```
