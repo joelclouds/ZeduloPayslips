@@ -243,7 +243,7 @@ class App:
                     }
                     # Pass email to _add_payslip_entry
                     self.root.after(0, lambda p=payslip_filepath, n=name, m=month, e=email: self._add_payslip_entry(p, n, m, e))
-                self.root.after(0, lambda: self.progress_label.config(text=f"Generated {counter} / {total} payslips"))
+                self.root.after(0, lambda: self.progress_label.config(text=f"Generated {counter} / {total} {month} payslips"))
 
             for month in selected_months:
                 generator = PayslipGenerator(month_no=month, progress_callback=progress_callback, config=self.config)
