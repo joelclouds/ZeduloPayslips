@@ -59,13 +59,17 @@ cd ZeduloPayslips
 ./scripts/install.sh
 ```
 
-### Quick Update
-To update the app on your system to the latest version without losing data, trigger an app update with this command
+### Quick Update (For existing installations)
+
+To update the app to the latest version **without losing your data or settings**:
+
 ```bash
-git clone https://github.com/joelclouds/ZeduloPayslips.git
-cd ZeduloPayslips
+cd /path/to/your/ZeduloPayslips   # ← Navigate to your existing clone
+git pull
 ./scripts/update.sh
 ```
+
+> ⚠️ **Note:** Your configuration and generated payslips are **not affected** by updates.
 
 ### What the Installer Does
 
