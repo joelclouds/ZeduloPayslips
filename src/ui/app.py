@@ -275,40 +275,42 @@ class App:
 
         frame = tk.Frame(self.payslip_scrollable_frame, pady=5, padx=5)
         frame.grid(row=self.payslip_row, column=0, sticky="ew", pady=2)
+        frame.columnconfigure(0, weight=1)  # Label expands
+
+        info_frame = tk.Frame(frame)
+        info_frame.grid(row=0, column=0, sticky="w", padx=(0, 10))
 
         display_text = f"{name}"
         if month:
             display_text += f" ({month})"
 
-        label = tk.Label(frame, text=display_text, font=("Helvetica", 10, "bold"), anchor="w", wraplength=400)
-        label.grid(row=0, column=0, sticky="w", padx=(0, 10))
+        label = tk.Label(info_frame, text=display_text, font=("Helvetica", 10, "bold"), anchor="w", wraplength=400)
+        label.pack(anchor="w")
 
-        path_label = tk.Label(frame, text=Path(path).name, font=("Helvetica", 8), fg="gray", anchor="w", wraplength=400)
-        path_label.grid(row=1, column=0, sticky="w", padx=(0, 10))
+        path_label = tk.Label(info_frame, text=Path(path).name, font=("Helvetica", 8), fg="gray", anchor="w", wraplength=400)
+        path_label.pack(anchor="w")
 
-        # Button column starts at 1
-        btn_col = 1
+        btn_frame = tk.Frame(frame)
+        btn_frame.grid(row=0, column=1, sticky="e")
 
-        review_btn = tk.Button(frame, text="Review PDF", width=10, command=lambda p=path: self._review_payslip(p))
-        review_btn.grid(row=0, column=btn_col, rowspan=2, padx=5, sticky="n")
-        btn_col += 1
+        review_btn = tk.Button(btn_frame, text="Review PDF", width=10, command=lambda p=path: self._review_payslip(p))
+        review_btn.pack(side="left", padx=2)
 
-        open_folder_btn = tk.Button(frame, text="Open Folder", width=10, command=lambda p=path: self._open_folder(p))
-        open_folder_btn.grid(row=0, column=btn_col, rowspan=2, padx=5, sticky="n")
-        btn_col += 1
+        open_folder_btn = tk.Button(btn_frame, text="Open Folder", width=10, command=lambda p=path: self._open_folder(p))
+        open_folder_btn.pack(side="left", padx=2)
 
-        # ← ADD EMAIL BUTTON ONLY IF EMAIL IS VALID
-        if email and email.strip():
-            email_btn = tk.Button(
-                frame,
-                text="Send Email",
-                width=10,
-                command=lambda p=path, e=email, n=name, m=month: self._send_payslip_email(p, e, n, m)
-            )
-            email_btn.grid(row=0, column=btn_col, rowspan=2, padx=5, sticky="n")
-            btn_col += 1
+        # Always create email button, disable if no email
+        email_btn = tk.Button(
+            btn_frame,
+            text="Send Email",
+            width=10,
+            command=lambda p=path, e=email, n=name, m=month: self._send_payslip_email(p, e, n, m)
+        )
+        email_btn.pack(side="left", padx=2)
 
-        frame.columnconfigure(0, weight=1)
+        if not email or not email.strip():
+            email_btn.config(state="disabled", text="No Email")
+
         self.payslip_widgets[path] = frame
         self.payslip_row += 1
 
