@@ -23,10 +23,11 @@ ZeduloPayslips/
 ├── scripts/                    # Installation scripts
 │   ├── install.sh             # Install script
 │   ├── uninstall.sh           # Uninstall script
-│   └── setup.py               # Python setup logic
+│   └── update.sh              # Update script
 ├── src/                        # Source code
 │   ├── config.py              # Default Application configuration
 │   ├── config_manager.py      # Config file management
+│   ├── setup.py               # Python setup logic
 │   ├── services/              # Business logic
 │   │   ├── payslip_generator.py
 │   │   ├── file_explorer.py
@@ -50,7 +51,7 @@ ZeduloPayslips/
 
 ## 🚀 Installation
 
-### Quick Install
+### Quick Install (For fresh setups)
 
 ```bash
 git clone https://github.com/joelclouds/ZeduloPayslips.git
@@ -58,9 +59,17 @@ cd ZeduloPayslips
 ./scripts/install.sh
 ```
 
+### Quick Update
+To update the app on your system to the latest version without losing data, trigger an app update with this command
+```bash
+git clone https://github.com/joelclouds/ZeduloPayslips.git
+cd ZeduloPayslips
+./scripts/update.sh
+```
+
 ### What the Installer Does
 
-1. **Checks system dependencies** (Python, LibreOffice, Thunderbird)
+1. **Checks system dependencies** (Python, LibreOffice)
 2. **Creates application directory** at `~/.zedulopayslips/`
 3. **Copies project files** to app directory
 4. **Creates Python virtual environment**
