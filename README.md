@@ -103,6 +103,9 @@ After installation, find **ZeduloPayslips** in your application menu!
 6. Review PDFs, open folder, or email individual payslips
 7. Use **Send All Emails** to batch-open Thunderbird compose windows
 
+> 📖 **Detailed UI Guide**: See [docs/USAGE.md](docs/USAGE.md) for workflow diagrams, config field explanations, and troubleshooting.
+
+
 ## ⚙️ Configuration
 
 Configuration stored in `~/.zedulopayslips/config.json`:

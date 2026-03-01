@@ -24,7 +24,7 @@ class EmailSender:
         if not self.thunderbird_cmd:
             return False, "Thunderbird not found"
 
-        subject = f"Payslip for {month} - {employee_name}"
+        subject = f"Zedulo payslip for {month}"
         body = f"""Dear {employee_name.title()},
 
 Please find attached your payslip for {month}.
@@ -48,8 +48,8 @@ HR"""
             else:
                 results["failed"] += 1
                 results["errors"].append({"email": p["email"], "error": msg})
-        return results
 
+        return results
 
 def send_payslip_email(recipient_email, employee_name, month, pdf_path):
     return EmailSender().send_payslip(recipient_email, employee_name, month, pdf_path)

@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
-import threading
+from threading import Thread, Event
 from pathlib import Path
 from src.config_manager import ConfigManager
 from src.ui.settings_window import SettingsWindow
@@ -25,6 +25,9 @@ class App:
         # Month selection: Dict of StringVars keyed by month name
         self.month_vars = {}
         self._build_ui()
+        self.settings_window = None
+        self.batch_mailing_inprog = False
+        self.mailing_stop_event = Event()
 
     def _build_ui(self):
         self.root.columnconfigure(0, weight=1)
@@ -133,13 +136,13 @@ class App:
         )
         self.payslip_canvas.bind(
             "<Configure>",
-            lambda e: self.payslip_canvas.itemconfig(self.canvas_window, width=e.width)  # ← Fit content to canvas width
+            lambda e: self.payslip_canvas.itemconfig(self.canvas_window, width=e.width)
         )
 
         self.canvas_window = self.payslip_canvas.create_window((0, 0), window=self.payslip_scrollable_frame, anchor="nw", tags="scrollable_frame")
         self.payslip_canvas.configure(yscrollcommand=self.payslip_scrollbar.set)
 
-        self.payslip_canvas.pack(side="left", fill="both", expand=True)  # ← Canvas expands
+        self.payslip_canvas.pack(side="left", fill="both", expand=True)
         self.payslip_scrollbar.pack(side="right", fill="y")
 
         # Mousewheel bindings (unchanged)
@@ -184,7 +187,10 @@ class App:
         return ""
 
     def _open_settings(self):
-        SettingsWindow(self.root)
+        if self.settings_window and self.settings_window.winfo_exists():
+            self.settings_window.destroy()
+
+        self.settings_window = SettingsWindow(self.root)
 
     def _start_generation(self):
         # Validate Month Selection
@@ -228,8 +234,7 @@ class App:
         self.progress_label.config(text=f"Starting generation for {months_display}...")
 
         # Pass INTEGERS to backend
-        thread = threading.Thread(target=self._generate_worker, args=(selected_months,), daemon=True)
-        thread.start()
+        Thread(target=self._generate_worker, args=(selected_months,), daemon=True).start()
 
     def _generate_worker(self, selected_months):
         try:
@@ -299,13 +304,8 @@ class App:
         open_folder_btn = tk.Button(btn_frame, text="Open Folder", width=10, command=lambda p=path: self._open_folder(p))
         open_folder_btn.pack(side="left", padx=2)
 
-        # Always create email button, disable if no email
-        email_btn = tk.Button(
-            btn_frame,
-            text="Send Email",
-            width=10,
-            command=lambda p=path, e=email, n=name, m=month: self._send_payslip_email(p, e, n, m)
-        )
+        email_btn = tk.Button(btn_frame, text="Send Email", width=10)
+        email_btn.config(command=lambda p=path, e=email, n=name, m=month, b=email_btn: self._send_payslip_email(p, e, n, m, b))
         email_btn.pack(side="left", padx=2)
 
         if not email or not email.strip():
@@ -329,18 +329,80 @@ class App:
         else:
             messagebox.showerror("Error", f"Folder not found: {folder}", parent=self.root)
 
-    def _send_payslip_email(self, pdf_path, recipient_email, employee_name, month):
-        """Open Thunderbird compose window for single payslip."""
-        success, message = send_payslip_email(recipient_email, employee_name, month, pdf_path)
+    def _send_payslip_email(self, pdf_path, recipient_email, employee_name, month, btn_widget):
+        """Non-blocking single email send. Disables button during operation."""
 
-        if success:
-            messagebox.showinfo("Email Ready", message, parent=self.root)
-        else:
-            messagebox.showerror("Email Failed", message, parent=self.root)
+        def _worker():
+            try:
+                success, message = send_payslip_email(recipient_email, employee_name, month, pdf_path)
+                # Schedule UI update on main thread
+                self.root.after(0, lambda: _finish(success, message))
+            except Exception as e:
+                self.root.after(0, lambda: _finish(False, str(e)))
+
+        def _finish(success, message):
+            btn_widget.config(state="normal", text="Resend Email")  # Re-enable button
+            if success:
+                messagebox.showinfo("Email Ready", message, parent=self.root)
+            else:
+                messagebox.showerror("Email Failed", message, parent=self.root)
+
+        btn_widget.config(state="disabled", text="Sending...")
+        Thread(target=_worker, daemon=True).start()
 
     def _send_all_emails(self):
-        """Open Thunderbird compose windows for all generated payslips with valid emails."""
-        # Build list from generated_payslips
+        """Toggle start/stop for batch emailing."""
+
+        # --- Nested Helper: Worker ---
+        def _worker(payslip_list, stop_event):
+            success, failed, errors = 0, 0, []
+            try:
+                for i, item in enumerate(payslip_list):
+                    if stop_event.is_set():
+                        break  # ← Cancel requested
+
+                    try:
+                        ok, msg = send_payslip_email(
+                            recipient_email=item["email"],
+                            employee_name=item["name"],
+                            month=item["month"],
+                            pdf_path=item["pdf"]
+                        )
+                        if ok:
+                            success += 1
+                        else:
+                            failed += 1
+                            errors.append({"email": item["email"], "error": msg})
+                    except Exception as e:
+                        failed += 1
+                        errors.append({"email": item["email"], "error": str(e)})
+
+                    # Progress update
+                    self.root.after(0, lambda c=i+1, t=len(payslip_list):
+                        self.progress_label.config(text=f"{c} / {t} emails opened..."))
+            finally:
+                # ← ALWAYS runs (cancel, crash, or complete)
+                self.root.after(0, lambda: _finalize(success, failed, errors))
+
+        # --- Nested Helper: Finalizer ---
+        def _finalize(success, failed, errors):
+            self.batch_mailing_inprog = False
+            self.send_all_btn.config(text="Send All Emails", state="normal")
+            self.progress_label.config(text="_")
+
+            msg = f"Opened: {success}\nFailed: {failed}"
+            if errors:
+                msg += "\n\nErrors:\n" + "\n".join([f"{e['email']}: {e['error']}" for e in errors[:5]])
+            messagebox.showinfo("Email Summary", msg, parent=self.root)
+
+        # --- Main Logic ---
+        if self.batch_mailing_inprog:
+            # Cancel Request
+            self.mailing_stop_event.set()
+            self.send_all_btn.config(text="Stopping...", state="disabled")
+            return
+
+        # Start Request
         payslip_list = [
             {"email": v["email"], "name": v["name"], "month": v["month"], "pdf": k}
             for k, v in self.generated_payslips.items()
@@ -351,25 +413,19 @@ class App:
             messagebox.showwarning("No Emails", "No payslips with valid email addresses found.", parent=self.root)
             return
 
-        confirm = messagebox.askyesno(
+        if not messagebox.askyesno(
             "Confirm Send",
-            f"Open {len(payslip_list)} Thunderbird compose windows?\n\nYou'll need to click Send on each one.",
+            f"Open {len(payslip_list)} Thunderbird compose windows?",
             parent=self.root
-        )
-        if not confirm:
+        ):
             return
 
-        self.progress_label.config(text=f"Opening {len(payslip_list)} email windows...")
-        self.root.update()
+        self.batch_mailing_inprog = True
+        self.mailing_stop_event.clear()
+        self.send_all_btn.config(text="Cancel Mailing", state="normal")
+        self.progress_label.config(text=f"0 / {len(payslip_list)} emails opened...")
 
-        results = send_bulk_payslips(payslip_list)
-
-        msg = f"Opened: {results['success']}\nFailed: {results['failed']}"
-        if results["errors"]:
-            msg += f"\n\nErrors:\n" + "\n".join([f"{e['email']}: {e['error']}" for e in results["errors"][:5]])
-
-        messagebox.showinfo("Email Summary", msg, parent=self.root)
-        self.progress_label.config(text="_")
+        Thread(target=_worker, args=(payslip_list, self.mailing_stop_event), daemon=True).start()
 
 # --------------------------
 # Entry point
@@ -378,3 +434,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = App(root)
     root.mainloop()
+
