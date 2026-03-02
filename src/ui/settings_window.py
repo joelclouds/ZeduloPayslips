@@ -1,13 +1,12 @@
-#!./venv/bin/python3
 """
 Settings window for Zedulo Payslips (Tkinter version).
 Mousewheel works over all areas - scrollbar, labels, entries, buttons, empty space.
 """
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
 from src.config_manager import ConfigManager
+import os
 from openpyxl import load_workbook
 
 
@@ -99,19 +98,19 @@ class SettingsWindow(tk.Toplevel):
 
             lbl = tk.Label(parent, text=label_text)
             lbl.grid(row=row, column=0, sticky="w", padx=pad, pady=(pad, 0))
-            # ✅ Bind mousewheel to label so it passes through
+            # Bind mousewheel to label so it passes through
             lbl.bind("<MouseWheel>", self._on_mousewheel, add="+")
             lbl.bind("<Button-4>", self._on_mousewheel, add="+")
             lbl.bind("<Button-5>", self._on_mousewheel, add="+")
 
             if key.endswith("ENABLED"):
-                # ✅ Checkbox for boolean settings
+                # Checkbox for boolean settings
                 var = tk.BooleanVar(value=self.config[key].lower() == "true" if isinstance(self.config[key], str) else bool(self.config[key]))
                 self.entries[key] = var  # Store BooleanVar instead of Entry
 
                 cb = tk.Checkbutton(parent, variable=var, onvalue=True, offvalue=False)
                 cb.grid(row=row, column=1, sticky="w", padx=pad, pady=(pad, 0))
-                # ✅ Bind mousewheel to checkbox so it passes through
+                # Bind mousewheel to checkbox so it passes through
                 cb.bind("<MouseWheel>", self._on_mousewheel, add="+")
                 cb.bind("<Button-4>", self._on_mousewheel, add="+")
                 cb.bind("<Button-5>", self._on_mousewheel, add="+")
@@ -119,12 +118,12 @@ class SettingsWindow(tk.Toplevel):
                 # Empty column 2 for alignment
                 tk.Label(parent, text="").grid(row=row, column=2, padx=pad, pady=(pad, 0))
             else:
-                # ✅ Entry for string/path settings
+                # Entry for string/path settings
                 entry = tk.Entry(parent, width=50)
                 entry.grid(row=row, column=1, sticky="ew", padx=pad, pady=(pad, 0))
                 entry.insert(0, self.config[key])
                 self.entries[key] = entry
-                # ✅ Bind mousewheel to entry so it passes through
+                # Bind mousewheel to entry so it passes through
                 entry.bind("<MouseWheel>", self._on_mousewheel, add="+")
                 entry.bind("<Button-4>", self._on_mousewheel, add="+")
                 entry.bind("<Button-5>", self._on_mousewheel, add="+")
@@ -173,7 +172,9 @@ class SettingsWindow(tk.Toplevel):
             self.entries[key].insert(0, path)
 
     def _save(self):
+        supported_spreadsheet_filetypes = ['.xlsx']
         new_config = {}
+
         for key, entry in self.entries.items():
 
             # EXTRACTION
@@ -183,12 +184,43 @@ class SettingsWindow(tk.Toplevel):
                 val = entry.get().strip()
 
             # VALIDATION
-            if key.endswith("FILEPATH") and val and not Path(val).exists():
-                messagebox.showerror("Invalid Path", f"{val} does not exist!", parent=self)
-                return
-            elif key.endswith("FOLDER") and val and not Path(val).is_dir():
-                messagebox.showerror("Invalid Directory", f"{val} is not a directory!", parent=self)
-                return
+            if key.endswith("FILEPATH"):
+                if not val:
+                    messagebox.showerror("Invalid filepath", f"{key.replace('_', ' ').title()} must not be empty!", parent=self)
+                    return
+
+                try:
+                    filepath = Path(val)
+                    if not filepath.exists():
+                        messagebox.showerror("Invalid File path", f"'{val}' \ndoes not exist!", parent=self)
+                        return
+                    if any(phrase in key for phrase in ['EMPLOYEE_SPREADSHEET', 'TEMPLATE']):
+                        if not filepath.suffix in supported_spreadsheet_filetypes:
+                            messagebox.showerror("Unsupported File Format", f"Spreadsheet must be: {', '.join(supported_spreadsheet_filetypes)}")
+                            return
+                except PermissionError:
+                    messagebox.showerror("Failed to Read File", f"The app does not have the superuser permission to read the file: '{val}',\nIt's better to store it at {os.environ['HOME']}/your/path/to/the/chosen/file.xslx instead!", parent=self)
+                    return
+
+            elif key.endswith("FOLDER"):
+                if not val:
+                    messagebox.showerror("Invalid Directory", f"{key.replace('_', ' ').title()} must not be empty!", parent=self)
+                    return
+
+                try:
+                    payslips_dir = Path(val)
+                    if payslips_dir.is_dir():
+                        continue
+
+                    payslips_dir.mkdir(parents=True, exist_ok=True)
+                    assert payslips_dir.is_dir(), "Folder creation using failed, do ot attempt to use punctation marks beyond '.' & '_'"
+                    messagebox.showinfo("New Directory Created", f"a new folder '{val}' has been created!", parent=self)
+                except PermissionError:
+                    messagebox.showerror("Failed to create Directory", f"The app does not have the superuser permission to create the payslips folder '{val}',\nIt's better to try from {os.environ['HOME']}/your_chosen_folder_name", parent=self)
+                    return
+                except Exception as e:
+                    messagebox.showerror("Failed to create Directory", f"{key.replace('_', ' ').title()} creation failed, \nError:\n{e}", parent=self)
+                    return
             elif key.endswith("HEADER"):
                 if not val:
                     continue
