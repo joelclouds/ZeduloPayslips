@@ -55,14 +55,33 @@ Terminal=False;
     desktop.chmod(0o755)
 
     # Copy icon
-    icon_src = Path(__file__).parent.parent / "assets" / "zedulopayslips.png"
+    icon_src = Path(__file__).parent.parent / "assets" / "icon.png"
     if icon_src.exists():
         shutil.copy2(icon_src, Path(APP_HOME_DIR) / "icon.png")
 
     subprocess.run(["update-desktop-database", str(Path.home() / ".local" / "share" / "applications")], capture_output=True)
     print(f"\n✅ {APP_NAME} installed!")
 
-if __name__ == "__main__":
-    isfresh = ("--fresh" in sys.argv)
+def uninstall():
+    # Remove desktop entry
+    desktop = Path.home() / ".local" / "share" / "applications" / f"{APP_NAME.lower()}.desktop"
+    if desktop.exists():
+        desktop.unlink()
+        subprocess.run(["update-desktop-database", str(desktop.parent)], capture_output=True)
 
-    setup(isfresh)
+    # Remove app home directory
+    if Path(APP_HOME_DIR).exists():
+        shutil.rmtree(APP_HOME_DIR)
+
+    # Remove config file
+    if Path(APP_CONFIG_FILEPATH).exists():
+        Path(APP_CONFIG_FILEPATH).unlink()
+
+    print(f"🗑️ {APP_NAME} uninstalled.")
+
+if __name__ == "__main__":
+    if "--uninstall" in sys.argv:
+        uninstall()
+    else:
+        isfresh = ("--fresh" in sys.argv)
+        setup(isfresh)
