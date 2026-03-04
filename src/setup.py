@@ -60,7 +60,8 @@ Terminal=False;
         shutil.copy2(icon_src, Path(APP_HOME_DIR) / "icon.png")
 
     subprocess.run(["update-desktop-database", str(Path.home() / ".local" / "share" / "applications")], capture_output=True)
-    print(f"\n✅ {APP_NAME} installed!")
+    action_done = "installed" if fresh else "updated"
+    print(f"\n✅ {APP_NAME} {action_done}! You can find it in your application menu!")
 
 def uninstall():
     # Remove desktop entry
