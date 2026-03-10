@@ -17,10 +17,13 @@ fi
 
 if ! command -v python3 &> /dev/null; then
     echo "⚠️ Python3 not found. Installing..."
-    sudo apt update && sudo apt install -y python3 python3-venv
+    sudo apt install -y python3
 fi
 
-sudo apt update && sudo apt install -y libreoffice
+if ! command -v python3-venv &> /dev/null; then
+    echo "⚠️ Python3-venv not found. Installing..."
+    sudo apt install -y python3-venv
+fi
 
 pushd scripts &> /dev/null
 
