@@ -2,6 +2,7 @@ import os, json, subprocess, shutil, venv
 from pathlib import Path
 from config import APP_HOME_DIR, APP_CONFIG_FILEPATH, APP_CONFIG, APP_NAME
 import sys
+from conn_utils import is_online
 
 def setup(fresh):
     Path(APP_HOME_DIR).mkdir(exist_ok=True)
@@ -84,5 +85,9 @@ if __name__ == "__main__":
     if "--uninstall" in sys.argv:
         uninstall()
     else:
+        if not is_online():
+            print("\n"*5 + "\tInternet connection REQUIRED ... Script will exit now" + "\n"*5)
+            exit(1)
+
         isfresh = ("--fresh" in sys.argv)
         setup(isfresh)

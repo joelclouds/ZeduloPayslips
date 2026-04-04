@@ -51,7 +51,8 @@ APP_CONFIG = {
     "TEMPLATE_NET_INCOME_CELL"         : "C43",
 
     # Misc
-    "MONEY_PREFIX": "₵",
-    "QUICK_MODE_ENABLED": False,
-    "USERNAME": "Administrator"
+    "MONEY_PREFIX"       : "₵",
+    "QUICK_MODE_ENABLED" : False,
+    "USERNAME"           : "Administrator",
+    "PAYSLIP_DATE"       : "",
 }

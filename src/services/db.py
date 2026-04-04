@@ -19,10 +19,11 @@ with open_db() as db_conn:
             staff_number INTEGER NOT NULL,
             name TEXT NOT NULL,
             month_no INTEGER NOT NULL,
+            year INTEGER NOT NULL,
             tier_1 INTEGER DEFAULT 0,
             tier_2 INTEGER DEFAULT 0,
             gross_pay INTEGER DEFAULT 0,
-            UNIQUE(staff_number, month_no)
+            UNIQUE(staff_number, month_no, year)
         )
     """)
     db_conn.commit()
@@ -32,14 +33,14 @@ class YTD_Tracker:
     def __init__(self):
         self.table = TABLES["payslip_records"]
 
-    def get_ytd(self, month_no: int, employee: dict) -> dict:
+    def get_ytd(self, month_no: int, year: int, employee: dict) -> dict:
         with open_db() as db_conn:
             db = db_conn.cursor()
             db.execute(f"""
                 SELECT staff_number, name, tier_1, tier_2, gross_pay
                 FROM {self.table}
-                WHERE staff_number = ? AND month_no = ?
-            """, (int(employee["staff_number"]), month_no))
+                WHERE staff_number = ? AND month_no = ? AND year = ?
+            """, (int(employee["staff_number"]), month_no, year))
             row = db.fetchone()
             if row:
                 return {
@@ -57,7 +58,7 @@ class YTD_Tracker:
                 "ytd_gross_pay": 0,
             }
 
-    def set_month_record(self, month_no: int, employee: dict) -> None:
+    def set_month_record(self, month_no: int, year: int, employee: dict) -> None:
         """
         """
         necessary_keys = [
@@ -73,19 +74,20 @@ class YTD_Tracker:
             db = db_conn.cursor()
             db.execute(f"""
                 INSERT OR REPLACE INTO {self.table}
-                (staff_number, name, month_no, tier_1, tier_2, gross_pay)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (staff_number, name, month_no, year, tier_1, tier_2, gross_pay)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 int(employee['staff_number']),
                 employee['name'],
                 month_no,
+                year,
                 employee['employee_ssf'],
                 employee['tier_2'],
                 employee['gross_income']
             ))
             db_conn.commit()
 
-    def get_cumulative_ytd(self, up_to_month: int, employee: dict) -> dict:
+    def get_cumulative_ytd(self, up_to_month: int, year: int, employee: dict) -> dict:
         with open_db() as db_conn:
             db = db_conn.cursor()
             db.execute(f"""
@@ -94,8 +96,8 @@ class YTD_Tracker:
                     SUM(tier_2) as tier_2,
                     SUM(gross_pay) as gross_pay
                 FROM {self.table}
-                WHERE staff_number = ? AND month_no <= ?
-            """, (int(employee["staff_number"]), up_to_month))
+                WHERE staff_number = ? AND month_no <= ? AND year = ?
+            """, (int(employee["staff_number"]), up_to_month, year))
             row = db.fetchone()
             return {
                 "staff_number": int(employee["staff_number"]),

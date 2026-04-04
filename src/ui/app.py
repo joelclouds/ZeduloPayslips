@@ -35,45 +35,75 @@ class App:
 
         main_frame = tk.Frame(self.root, padx=40, pady=40)
         main_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Center everything
         main_frame.columnconfigure(0, weight=1)
 
-        # Title
+        # Title - centered
         tk.Label(
             main_frame,
             text=f"Welcome {self.config['USERNAME']},",
-            font=("Helvetica", 32, "bold")
-        ).grid(row=0, column=0, pady=(0, 20))
+            font=("Helvetica", 40, "bold")
+        ).grid(row=0, column=0, pady=(40, 15))
 
-        # Subtitle
+        # Subtitle with year inline - centered
+        subtitle_frame = tk.Frame(main_frame)
+        subtitle_frame.grid(row=1, column=0, pady=(0, 30))
+
         tk.Label(
-            main_frame,
-            text="Shall we start the payslip generation process now?\n...\nSimply provide the month(s), then data and the template",
+            subtitle_frame,
+            text="Shall we start the payslip generation process now?",
             font=("Helvetica", 14)
-        ).grid(row=1, column=0, pady=(0, 30))
+        ).pack()
+
+        subtitle_bottom = tk.Frame(main_frame)
+        subtitle_bottom.grid(row=2, column=0, pady=(0, 40))
+
+        tk.Label(
+            subtitle_bottom,
+            text="...Simply provide the month(s) for ",
+            font=("Helvetica", 14)
+        ).pack(side="left")
+
+        current_year = datetime.now().year
+        self.year_var = tk.StringVar(value=str(current_year))
+        year_dropdown = tk.OptionMenu(
+            subtitle_bottom, 
+            self.year_var, 
+            *[str(y) for y in range(current_year-2, current_year+2)]
+        )
+        year_dropdown.config(width=6, font=("Helvetica", 11, "bold"))
+        year_dropdown.pack(side="left", padx=(0, 5))
+
+        tk.Label(
+            subtitle_bottom,
+            text=", then data and the template",
+            font=("Helvetica", 14)
+        ).pack(side="left")
+
+        subtitle_bottom = tk.Frame(main_frame)
+        subtitle_bottom.grid(row=2, column=0, pady=(0, 30), sticky="w")
 
         # --- Month Checklist Section ---
         month_frame = tk.LabelFrame(main_frame, text="Select Month(s)", padx=20, pady=10)
-        month_frame.grid(row=2, column=0, sticky="ew", pady=(0, 30))
+        month_frame.grid(row=3, column=0, sticky="ew", pady=(0, 30))
         month_frame.columnconfigure(tuple(range(6)), weight=1)
 
-        # Month mapping: (Display Name, Backend Number)
         self.months_mapping = [
             ("January", 1), ("February", 2), ("March", 3), ("April", 4), ("May", 5), ("June", 6),
             ("July", 7), ("August", 8), ("September", 9), ("October", 10), ("November", 11), ("December", 12)
         ]
 
         self.month_checkboxes = {}
-        self.month_vars = {}  # Keyed by month NUMBER (for backend)
+        self.month_vars = {}
         for idx, (month_name, month_num) in enumerate(self.months_mapping):
             row = idx // 6
             col = idx % 6
-
             var = tk.BooleanVar(value=False)
-            self.month_vars[month_num] = var  # Key by number for backend
-
+            self.month_vars[month_num] = var
             cb = tk.Checkbutton(
                 month_frame,
-                text=month_name,  # UI shows NAME
+                text=month_name,
                 variable=var,
                 font=("Helvetica", 10),
                 anchor="w"
@@ -85,51 +115,38 @@ class App:
         quick_frame = tk.Frame(month_frame)
         quick_frame.grid(row=2, column=0, columnspan=6, pady=(10, 0))
 
-        tk.Button(
-            quick_frame,
-            text="Select All",
-            width=10,
-            command=self._select_all_months
-        ).pack(side="left", padx=5)
+        tk.Button(quick_frame, text="Select All", width=10, command=self._select_all_months).pack(side="left", padx=5)
+        tk.Button(quick_frame, text="Clear All", width=10, command=self._clear_all_months).pack(side="left", padx=5)
 
-        tk.Button(
-            quick_frame,
-            text="Clear All",
-            width=10,
-            command=self._clear_all_months
-        ).pack(side="left", padx=5)
-
-        # Set current month as default selected
         current_month_num = datetime.now().month
         self.month_vars[current_month_num].set(True)
 
         # Buttons
         button_frame = tk.Frame(main_frame)
-        button_frame.grid(row=3, column=0)
+        button_frame.grid(row=4, column=0, pady=(0, 20))
 
         self.generate_btn = tk.Button(button_frame, text="Generate Payslips", width=20, command=self._start_generation)
         self.generate_btn.grid(row=0, column=0, padx=10)
 
         tk.Button(button_frame, text="Settings", width=20, command=self._open_settings).grid(row=0, column=1, padx=10)
 
-        # ← ADD SEND ALL BUTTON
         self.send_all_btn = tk.Button(button_frame, text="Send All Emails", width=20, command=self._send_all_emails, state="disabled")
         self.send_all_btn.grid(row=0, column=2, padx=10)
+
         # Progress label
         self.progress_label = tk.Label(main_frame, text="_", font=("Helvetica", 12))
-        self.progress_label.grid(row=4, column=0, pady=(0, 20))
+        self.progress_label.grid(row=5, column=0, pady=(0, 20))
 
-        # Scrollable payslip list section - DYNAMIC RESIZING
+        # Scrollable payslip list section
         list_frame = tk.LabelFrame(self.root, text="Generated Payslips", padx=10, pady=10)
         list_frame.grid(row=1, column=0, sticky="nsew", padx=40, pady=(0, 40))
         list_frame.columnconfigure(0, weight=1)
-        list_frame.rowconfigure(0, weight=1)  # ← Canvas expands vertically
+        list_frame.rowconfigure(0, weight=1)
 
         self.payslip_canvas = tk.Canvas(list_frame, highlightthickness=0)
         self.payslip_scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=self.payslip_canvas.yview)
         self.payslip_scrollable_frame = tk.Frame(self.payslip_canvas)
 
-        # Update scrollregion when canvas OR frame resizes
         self.payslip_scrollable_frame.bind(
             "<Configure>",
             lambda e: self.payslip_canvas.configure(scrollregion=self.payslip_canvas.bbox("all"))
@@ -145,7 +162,6 @@ class App:
         self.payslip_canvas.pack(side="left", fill="both", expand=True)
         self.payslip_scrollbar.pack(side="right", fill="y")
 
-        # Mousewheel bindings (unchanged)
         self.payslip_canvas.bind("<Enter>", self._bind_payslip_mousewheel)
         self.payslip_canvas.bind("<Leave>", self._unbind_payslip_mousewheel)
 
@@ -193,7 +209,7 @@ class App:
         self.settings_window = SettingsWindow(self.root)
 
     def _start_generation(self):
-        # Validate Month Selection
+        selected_year   = int(self.year_var.get())
         selected_months = self._get_selected_months()
         if not selected_months:
             messagebox.showerror("Error", "Please select at least one month!", parent=self.root)
@@ -231,12 +247,12 @@ class App:
         # Display month NAMES in UI progress
         month_names = [self._get_month_name(m) for m in selected_months]
         months_display = ", ".join(month_names) if len(month_names) <= 3 else f"{month_names[0]}... ({len(month_names)} months)"
-        self.progress_label.config(text=f"Starting generation for {months_display}...")
+        self.progress_label.config(text=f"Starting generation for {months_display} ({selected_year})...")
 
         # Pass INTEGERS to backend
-        Thread(target=self._generate_worker, args=(selected_months,), daemon=True).start()
+        Thread(target=self._generate_worker, args=(selected_months, selected_year), daemon=True).start()
 
-    def _generate_worker(self, selected_months):
+    def _generate_worker(self, selected_months, selected_year):
         try:
             def progress_callback(counter, total, name=None, email=None, month=None, payslip_filepath=None):
                 if payslip_filepath:
@@ -247,34 +263,34 @@ class App:
                         "payslip_filepath": payslip_filepath
                     }
                     # Pass email to _add_payslip_entry
-                    self.root.after(0, lambda p=payslip_filepath, n=name, m=month, e=email: self._add_payslip_entry(p, n, m, e))
+                    self.root.after(0, lambda m=month, y=selected_year, p=payslip_filepath, n=name, e=email: self._add_payslip_entry(m, y, p, n, e))
                 self.root.after(0, lambda: self.progress_label.config(text=f"Generated {counter} / {total} {month} payslips"))
 
             for month in selected_months:
-                generator = PayslipGenerator(month_no=month, progress_callback=progress_callback, config=self.config)
+                generator = PayslipGenerator(month_no=month, year=selected_year, progress_callback=progress_callback, config=self.config)
                 generator.generate_payslips()
 
-            self.root.after(0, lambda: self._generation_complete(selected_months))
+            self.root.after(0, lambda: self._generation_complete(selected_months, selected_year))
         except Exception as e:
             import logging
             logging.error(e, exc_info=True)
             self.root.after(0, lambda: messagebox.showerror("Error", str(e), parent=self.root))
             self.root.after(0, lambda: self.generate_btn.config(state="normal"))
 
-    def _generation_complete(self, selected_months):
+    def _generation_complete(self, selected_months, selected_year):
         count = len(self.generated_payslips)
         month_names = [self._get_month_name(m) for m in selected_months]
         months_display = ", ".join(month_names) if len(month_names) <= 3 else f"{len(month_names)} months"
-        self.progress_label.config(text=f"All payslips generated for {months_display}. ({count} total)")
+        self.progress_label.config(text=f"All payslips generated for {months_display} ({selected_year}). ({count} total)")
         self.generate_btn.config(state="normal")
 
         # ← Enable Send All button if there are emails
         has_emails = any(v.get("email") and v["email"].strip() for v in self.generated_payslips.values())
         self.send_all_btn.config(state="normal" if has_emails else "disabled")
 
-        messagebox.showinfo("Success", f"All payslips have been generated successfully for {months_display}.\n\nTotal: {count}", parent=self.root)
+        messagebox.showinfo("Success", f"All payslips have been generated successfully for {months_display} ({selected_year}).\n\nTotal: {count}", parent=self.root)
 
-    def _add_payslip_entry(self, path, name, month, email=None):
+    def _add_payslip_entry(self, month, year, path, name, email=None):
         if path in self.payslip_widgets:
             return
 
@@ -287,7 +303,7 @@ class App:
 
         display_text = f"{name}"
         if month:
-            display_text += f" ({month})"
+            display_text += f" ({month} {year})"
 
         label = tk.Label(info_frame, text=display_text, font=("Helvetica", 10, "bold"), anchor="w", wraplength=400)
         label.pack(anchor="w")

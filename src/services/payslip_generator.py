@@ -30,12 +30,10 @@ class Column_header:
             self.column_index = None
             return -1
 
-def first_date_of_month(month_num):
-    year = datetime.now().year
+def first_date_of_month(month_num, year):
     return year, month_num, 1
 
-def last_date_of_month(month_num):
-    year = datetime.now().year
+def last_date_of_month(month_num, year):
     assert month_num in range(1, 13)
 
     if month_num in [9, 4, 6, 11]:
@@ -49,7 +47,7 @@ def last_date_of_month(month_num):
     return year, month_num, day
 
 class PayslipGenerator:
-    def __init__(self, month_no, **kwargs):
+    def __init__(self, month_no: int, year: int, **kwargs):
         """
         Loads Employee spreadsheet.
         Sets general payslip info.
@@ -66,11 +64,12 @@ class PayslipGenerator:
         self.employee_sheet_filepath = self.settings["EMPLOYEE_SPREADSHEET_FILEPATH"]
         self.month_no       = month_no
         self.month          = datetime(1970, month_no, 1).strftime("%B")
+        self.year           = year
         self.employee_sheet = None
         self.employee_sheet_headers = None
         self.template_sheet_cells   = None
-        self.start_datetime_str = datetime(*first_date_of_month(month_no)).strftime("%d/%m/%Y")
-        self.end_datetime_str   = datetime(*last_date_of_month(month_no)).strftime("%d/%m/%Y")
+        self.start_datetime_str = datetime(*first_date_of_month(month_no, year)).strftime("%d/%m/%Y")
+        self.end_datetime_str   = datetime(*last_date_of_month(month_no, year)).strftime("%d/%m/%Y")
 
         self.load_employee_sheet()
         self._init_employee_sheet_headers()
@@ -95,7 +94,7 @@ class PayslipGenerator:
         self.template_sheet_cells = {
             "payslip_date": {
                 "location": self.settings["TEMPLATE_PAYSLIP_DATE_CELL"],
-                "value"   : f"Date: {datetime.now().strftime('%d/%m/%Y')}"
+                "value"   : self.settings["PAYSLIP_DATE"] or f"Date: {self.end_datetime_str}"
              },
             "payslip_period" : {
                 "location": self.settings["TEMPLATE_PAYSLIP_PERIOD_CELL"],
@@ -141,7 +140,6 @@ class PayslipGenerator:
                 "location": self.settings["TEMPLATE_UNTAXED_BONUS_CELL"],
                 "value"   : None
             },
-
             "employee_ssf" : {
                 "location": self.settings["TEMPLATE_EMPLOYEE_SSF_CELL"],
                 "value"   : None
@@ -232,8 +230,8 @@ class PayslipGenerator:
         )
 
         ytd_tracker = YTD_Tracker()
-        ytd_tracker.set_month_record(self.month_no, employee_entry)
-        employee_entry.update(ytd_tracker.get_cumulative_ytd(self.month_no, employee_entry))
+        ytd_tracker.set_month_record(self.month_no, self.year, employee_entry)
+        employee_entry.update(ytd_tracker.get_cumulative_ytd(self.month_no, self.year, employee_entry))
 
         # Convert monetary fields from pesewas to GHS for export
         for k, v in employee_entry.items():
@@ -264,7 +262,7 @@ class PayslipGenerator:
         }
 
     def write_payslip_xlsx(self, payslip_details: dict):
-        output_dir = Path(self.settings["EMPLOYEE_PAYSLIPS_FOLDER"]) / str(self.month)
+        output_dir = Path(self.settings["EMPLOYEE_PAYSLIPS_FOLDER"]) / str(self.year) / str(self.month)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{payslip_details['name']['value'].replace(' ', '_')}_{self.month}_Payslip.xlsx"
 
