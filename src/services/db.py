@@ -4,11 +4,22 @@ from src.config import APP_SQLITE_DB_FILEPATH
 
 TABLES = {"payslip_records": "payslip_records"}
 
+def _migrate_schema(conn):
+    cur = conn.cursor()
+    cur.execute(f"PRAGMA table_info({TABLES['payslip_records']})")
+    cols = [row[1] for row in cur.fetchall()]
+
+    if "year" not in cols:
+        cur.execute(f"ALTER TABLE {TABLES['payslip_records']} ADD COLUMN year INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+
 def open_db():
     db_path = Path(APP_SQLITE_DB_FILEPATH)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
+    _migrate_schema(conn)  # Patch old databases
+
     return conn
 
 with open_db() as db_conn:
