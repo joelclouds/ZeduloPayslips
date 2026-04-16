@@ -78,13 +78,14 @@ def ghana_tax_calculator(gross_income_pesewas: int, untaxed_bonus_pesewas: int, 
 
     # Bonus tax (5%)
     bonus_tax = apply_rounding(min(untaxed_bonus_pesewas, bonus_threshold) * 5, 100)
+    income_tax += bonus_tax
     bonus = untaxed_bonus_pesewas - bonus_tax
 
     # Totals
     total_deductions = employee_ssf + income_tax
     total_contributions = tier_2 + employer_ssf
-    net_income = gross_income_pesewas - total_deductions + bonus - extra_deduction_pesewas
     total_income = gross_income_pesewas + untaxed_bonus_pesewas
+    net_income = total_income - total_deductions - extra_deduction_pesewas
 
     return {
         "gross_income": gross_income_pesewas,
@@ -98,7 +99,7 @@ def ghana_tax_calculator(gross_income_pesewas: int, untaxed_bonus_pesewas: int, 
         "total_contributions": total_contributions,
         "extra_deduction": extra_deduction_pesewas,
         "total_income": total_income,
-        "net_income": net_income,
+        "net_income": net_income
     }
 
 # --------------------------

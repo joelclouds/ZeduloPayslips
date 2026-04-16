@@ -217,9 +217,9 @@ class PayslipGenerator:
             employee_entry[k] = employee_sheet_row[v.column_index].value if v.column else None
 
         assert type(employee_entry["staff_number"]) == int, f"For {self.month}, {employee_entry['name']} has no proper {self.settings['EMPLOYEE_STAFF_NUMBER_HEADER']} (it must be a number)"
-        assert type(employee_entry["gross_income"]) == int, f"For {self.month}, {employee_entry['name']} has no valid {self.settings['EMPLOYEE_GROSS_INCOME_HEADER']} in the employee spreadsheet at least put 0 there"
-        assert type(employee_entry["untaxed_bonus"]) == int, f"For {self.month}, {employee_entry['name']} has no valid {self.settings['EMPLOYEE_UNTAXED_BONUS_HEADER']} in the employee spreadsheet at least put 0 there"
-        assert type(employee_entry["extra_deduction"]) == int, f"For {self.month}, {employee_entry['name']} has no valid {self.settings['EMPLOYEE_EXTRA_DEDUCTION_HEADER']} in the employee spreadsheet at least put 0 there"
+        assert type(employee_entry["gross_income"]) in [int, float], f"For {self.month}, {employee_entry['name']} has no valid {self.settings['EMPLOYEE_GROSS_INCOME_HEADER']} in the employee spreadsheet at least put 0 there"
+        assert type(employee_entry["untaxed_bonus"]) in [int, float], f"For {self.month}, {employee_entry['name']} has no valid {self.settings['EMPLOYEE_UNTAXED_BONUS_HEADER']} in the employee spreadsheet at least put 0 there"
+        assert type(employee_entry["extra_deduction"]) in [int, float], f"For {self.month}, {employee_entry['name']} has no valid {self.settings['EMPLOYEE_EXTRA_DEDUCTION_HEADER']} in the employee spreadsheet at least put 0 there"
 
         employee_entry.update(
             ghana_tax_calculator(
