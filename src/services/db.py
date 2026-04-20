@@ -18,7 +18,6 @@ def open_db():
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
-    _migrate_schema(conn)  # Patch old databases
 
     return conn
 
@@ -37,6 +36,7 @@ with open_db() as db_conn:
             UNIQUE(staff_number, month_no, year)
         )
     """)
+    _migrate_schema(db_conn)  # Patch old databases
     db_conn.commit()
 
 
